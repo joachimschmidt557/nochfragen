@@ -20,6 +20,7 @@
   let items = [];
   let password = "";
   let passwordModalAlert = "";
+  let deleteModalAlert = "";
   let alertSuccess = "";
   let alertDanger = "";
 
@@ -80,11 +81,33 @@
 
   async function logout() {
     await fetch(`/api/logout`, { method: "POST" })
-      .then(() => {
+      .then((response) => {
+        if (response.status !== 200) {
+          throw new Error("Error while logging out");
+        }
+
         loggedIn = false;
         updateQuestions();
       })
       .catch((error) => (alertDanger = error));
+  }
+
+  async function deleteAllQuestions() {
+    await fetch(`/api/questions`, { method: "DELETE" })
+      .then((response) => {
+        if (response.status !== 200) {
+          throw new Error("Error while deleting all questions");
+        }
+
+        items = [];
+        deleteModalAlert = "";
+        var deleteModal = bootstrap.Modal.getOrCreateInstance(
+          document.getElementById("deleteModal"),
+          {}
+        );
+        deleteModal.hide();
+      })
+      .catch((error) => (deleteModalAlert = error));
   }
 
   async function submitSuccess() {
@@ -105,12 +128,25 @@
   }
 </script>
 
+<nav class="navbar">
+  <div class="container">
+    <span class="navbar-brand mb-0 h1">Questions</span>
+    {#if loggedIn}
+      <button type="button" on:click={logout} class="btn">Logout</button>
+    {:else}
+      <button
+        type="button"
+        class="btn"
+        data-bs-toggle="modal"
+        data-bs-target="#loginModal">Moderator Login</button
+      >
+    {/if}
+  </div>
+</nav>
 <main>
   <div class="container">
-    <h1>Questions</h1>
-
     {#if alertSuccess !== ""}
-      <div class="alert alert-success alert-dismissable" role="alert">
+      <div class="alert alert-success alert-dismissible" role="alert">
         {alertSuccess}
         <button
           on:click={dismissAlertSuccess}
@@ -122,7 +158,7 @@
     {/if}
 
     {#if alertDanger !== ""}
-      <div class="alert alert-danger alert-dismissable" role="alert">
+      <div class="alert alert-danger alert-dismissible" role="alert">
         {alertDanger}
         <button
           on:click={dismissAlertDanger}
@@ -133,82 +169,125 @@
       </div>
     {/if}
 
-    <button
-      type="button"
-      on:click={updateQuestions}
-      class="btn"
-      disabled={updating}
-    >
-      {#if updating}
-        <span
-          class="spinner-border spinner-border-sm"
-          role="status"
-          aria-hidden="true"
-        />
-        Loading...
-      {:else}
-        Refresh
-      {/if}
-    </button>
+    <div class="pb-2">
+      <div class="btn-group" role="group" aria-label="Controls">
+        <button
+          type="button"
+          on:click={updateQuestions}
+          class="btn btn-outline-primary"
+          disabled={updating}
+        >
+          Refresh
+        </button>
+        {#if loggedIn}
+          <button
+            type="button"
+            class="btn btn-outline-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteModal"
+          >
+            Delete all questions
+          </button>
+        {/if}
+      </div>
+    </div>
     <ul class="list-group">
       <Ask on:success={submitSuccess} on:error={submitError} />
       <List {items} {loggedIn} />
     </ul>
-    {#if loggedIn}
-      <button type="button" on:click={logout} class="btn">Log out</button>
-    {:else}
-      <button
-        type="button"
-        class="btn"
-        data-bs-toggle="modal"
-        data-bs-target="#loginModal">Log in</button
-      >
-    {/if}
   </div>
+  <div class="mt-3">
+    <p class="text-center text-muted fst-italic">
+      This software is <a href="https://github.com/joachimschmidt557/gutefrage"
+        >open source</a
+      >.
+    </p>
+  </div>
+</main>
 
-  <div
-    class="modal fade"
-    id="loginModal"
-    tabindex="-1"
-    aria-labelledby="loginModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="loginModalLabel">Login</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
+<div
+  class="modal fade"
+  id="loginModal"
+  tabindex="-1"
+  aria-labelledby="loginModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        />
+      </div>
+      <form on:submit|preventDefault={login}>
+        <div class="modal-body">
+          {#if passwordModalAlert !== ""}
+            <div class="alert alert-danger" role="alert">
+              {passwordModalAlert}
+            </div>
+          {/if}
+          <label for="password" class="form-label">Password</label>
+          <input
+            bind:value={password}
+            type="password"
+            class="form-control"
+            id="password"
           />
         </div>
-        <form on:submit|preventDefault={login}>
-          <div class="modal-body">
-            {#if passwordModalAlert !== ""}
-              <div class="alert alert-warning" role="alert">
-                {passwordModalAlert}
-              </div>
-            {/if}
-            <label for="password" class="form-label">Password</label>
-            <input
-              bind:value={password}
-              type="password"
-              class="form-control"
-              id="password"
-            />
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal">Close</button
+          >
+          <button type="submit" class="btn btn-primary">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div
+  class="modal fade"
+  id="deleteModal"
+  tabindex="-1"
+  aria-labelledby="deleteModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Delete all questions</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        />
+      </div>
+      <div class="modal-body">
+        {#if deleteModalAlert !== ""}
+          <div class="alert alert-danger" role="alert">
+            {deleteModalAlert}
           </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal">Close</button
-            >
-            <button type="submit" class="btn btn-primary">Login</button>
-          </div>
-        </form>
+        {/if}
+        <p>
+          Are you sure you want to delete all questions? This cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+          >Close</button
+        >
+        <button
+          type="submit"
+          class="btn btn-danger"
+          on:click={deleteAllQuestions}>Delete</button
+        >
       </div>
     </div>
   </div>
-</main>
+</div>

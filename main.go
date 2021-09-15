@@ -269,6 +269,19 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	case "DELETE":
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			http.Error(writer, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		err := rdb.Del(ctx, "gutefrage.visibility").Err()
+		err = rdb.Del(ctx, "gutefrage.visibility").Err()
+		err = rdb.Del(ctx, "gutefrage.questions").Err()
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	default:
 		http.Error(writer, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 	}

@@ -52,6 +52,8 @@
       .then((response) => {
         if (response.status === 403) {
           throw new Error("Wrong password");
+        } else if (response.status !== 200) {
+          throw new Error("Error while logging in");
         }
 
         loggedIn = true;

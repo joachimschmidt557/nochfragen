@@ -225,7 +225,7 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		if requestData.Text == "" {
-			http.Error(writer, err.Error(), http.StatusBadRequest)
+			http.Error(writer, "Empty question", http.StatusBadRequest)
 			return
 		}
 

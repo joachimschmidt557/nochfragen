@@ -21,6 +21,7 @@ const (
 	Visible
 	Deleted
 	defaultVisibility = Hidden
+	maxQuestionLen = 500
 )
 
 type Question struct {
@@ -43,7 +44,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-type LoginStatusRequest struct {
+type LoginStatusResponse struct {
 	LoggedIn bool `json:"loggedIn"`
 }
 
@@ -123,7 +124,7 @@ func login(writer http.ResponseWriter, request *http.Request) {
 		auth, ok := session.Values["authenticated"].(bool)
 		loggedIn := ok && auth
 
-		response := LoginStatusRequest{
+		response := LoginStatusResponse{
 			LoggedIn: loggedIn,
 		}
 
@@ -252,6 +253,11 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 
 		if requestData.Text == "" {
 			http.Error(writer, "Empty question", http.StatusBadRequest)
+			return
+		}
+
+		if len(requestData.Text) > maxQuestionLen {
+			http.Error(writer, "Question too large", http.StatusRequestEntityTooLarge)
 			return
 		}
 

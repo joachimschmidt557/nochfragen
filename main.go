@@ -224,6 +224,11 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
+		if requestData.Text == "" {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		// TODO race condition
 		err = rdb.RPush(ctx, "gutefrage.visibility", defaultVisibility).Err()
 		err = rdb.RPush(ctx, "gutefrage.questions", requestData.Text).Err()

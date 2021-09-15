@@ -1,17 +1,19 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"flag"
-	"log"
-	"os"
-	"net/http"
 	"io"
 	"io/ioutil"
-	"encoding/json"
-	"context"
+	"log"
+	"net/http"
+	"os"
 
-	"github.com/gorilla/sessions"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/sessions"
+	"github.com/throttled/throttled/v2"
+	"github.com/throttled/throttled/v2/store/memstore"
 )
 
 const (
@@ -22,11 +24,11 @@ const (
 )
 
 type Question struct {
-	Id int `json:"id"`
-	Text string `json:"text"`
-	Upvotes int `json:"upvotes"`
-	Visibility int `json:"visibility"`
-	Upvoted bool `json:"upvoted"`
+	Id         int    `json:"id"`
+	Text       string `json:"text"`
+	Upvotes    int    `json:"upvotes"`
+	Visibility int    `json:"visibility"`
+	Upvoted    bool   `json:"upvoted"`
 }
 
 type ModifyQuestionRequest struct {
@@ -34,7 +36,7 @@ type ModifyQuestionRequest struct {
 }
 
 type AddQuestionRequest struct {
-        Text string `json:"text"`
+	Text string `json:"text"`
 }
 
 type LoginRequest struct {
@@ -63,18 +65,42 @@ func main() {
 		DB:       0,
 	})
 
-	http.HandleFunc("/", index)
-	http.Handle("/build/", http.StripPrefix("/build/", http.FileServer(http.Dir("public/build"))))
-	http.HandleFunc("/api/login", login)
-	http.HandleFunc("/api/logout", logout)
-	http.HandleFunc("/api/questions", questions)
-	http.HandleFunc("/api/upvote", upvote)
-	http.HandleFunc("/api/show", show)
-	http.HandleFunc("/api/hide", hide)
-	http.HandleFunc("/api/delete", delete)
+	store, err := memstore.New(65536)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	quota := throttled.RateQuota{
+		MaxRate:  throttled.PerMin(30),
+		MaxBurst: 5,
+	}
+	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	httpRateLimiter := throttled.HTTPRateLimiter{
+		RateLimiter: rateLimiter,
+		VaryBy: &throttled.VaryBy{
+			Path:    true,
+			Cookies: []string{"session"},
+		},
+	}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", index)
+	mux.Handle("/build/", http.StripPrefix("/build/", http.FileServer(http.Dir("public/build"))))
+	mux.HandleFunc("/api/login", login)
+	mux.HandleFunc("/api/logout", logout)
+	mux.HandleFunc("/api/questions", questions)
+	mux.HandleFunc("/api/upvote", upvote)
+	mux.HandleFunc("/api/show", show)
+	mux.HandleFunc("/api/hide", hide)
+	mux.HandleFunc("/api/delete", delete)
 
 	log.Printf("Listening on %v", listenAddress)
-	log.Fatal(http.ListenAndServe(listenAddress, nil))
+	log.Fatal(http.ListenAndServe(listenAddress, httpRateLimiter.RateLimit(mux)))
 }
 
 func index(writer http.ResponseWriter, request *http.Request) {
@@ -189,11 +215,11 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 				voted, ok := session.Values[i].(bool)
 
 				question := Question{
-					Id: int(i),
-					Text: text,
-					Upvotes: upvotes,
+					Id:         int(i),
+					Text:       text,
+					Upvotes:    upvotes,
 					Visibility: visibility,
-					Upvoted: ok && voted,
+					Upvoted:    ok && voted,
 				}
 				filteredQuestions = append(filteredQuestions, question)
 			}
@@ -273,7 +299,7 @@ func upvote(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		upvotes, err := rdb.LIndex(ctx, "gutefrage.upvotes", id).Int()
-		err = rdb.LSet(ctx, "gutefrage.upvotes", id, upvotes + 1).Err()
+		err = rdb.LSet(ctx, "gutefrage.upvotes", id, upvotes+1).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return

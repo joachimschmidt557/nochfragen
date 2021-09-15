@@ -26,7 +26,15 @@
   async function updateQuestions() {
     updating = true;
     await fetch(`/api/questions`)
-      .then((r) => r.json())
+      .then((response) => {
+        if (response.status !== 200) {
+          throw new Error(
+            `Error fetching questions. Server returned ${response.status}.`
+          );
+        }
+
+        return response.json();
+      })
       .then((data) => {
         data.sort((a, b) => b.upvotes - a.upvotes);
         items = data;
@@ -37,7 +45,7 @@
 
   async function getLoginStatus() {
     await fetch(`/api/login`)
-      .then((r) => r.json())
+      .then((response) => response.json())
       .then((data) => {
         loggedIn = data.loggedIn;
       })
@@ -85,7 +93,7 @@
   }
 
   function submitError(event) {
-  alertDanger = `Error submitting question: ${event.detail}`;
+    alertDanger = `Error submitting question: ${event.detail}`;
   }
 
   function dismissAlertSuccess() {

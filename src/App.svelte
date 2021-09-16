@@ -1,4 +1,5 @@
 <script>
+  import * as bootstrap from "bootstrap";
   import { onMount } from "svelte";
 
   import Ask from "./Ask.svelte";

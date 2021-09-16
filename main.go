@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,7 +24,7 @@ const (
 	Visible
 	Deleted
 	defaultVisibility = Hidden
-	maxQuestionLen = 500
+	maxQuestionLen    = 500
 )
 
 type Question struct {
@@ -50,23 +53,40 @@ type LoginStatusResponse struct {
 
 var ctx = context.Background()
 var rdb *redis.Client
-var listenAddress string
-var redisAddress string
-var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-var password string
+var store *sessions.CookieStore
 
 func main() {
-	flag.StringVar(&listenAddress, "listen-address", "0.0.0.0:8000", "Address to listen for connections")
-	flag.StringVar(&redisAddress, "redis-address", "localhost:6379", "Address to connect to redis")
+	listenAddress := flag.String("listen-address", "0.0.0.0:8000", "Address to listen for connections")
+	redisAddress := flag.String("redis-address", "localhost:6379", "Address to connect to redis")
+	generateSessionKey := flag.Bool("generate-session-key", false, "Generate and print a session key and exit instead of running server")
 	flag.Parse()
 
+	if *generateSessionKey {
+		sessionKey := make([]byte, 32)
+		_, err := rand.Read(sessionKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		encoded := base64.StdEncoding.EncodeToString(sessionKey)
+
+		fmt.Printf("SESSION_KEY=%v\n", encoded)
+		return
+	}
+
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     redisAddress,
+		Addr:     *redisAddress,
 		Password: "",
 		DB:       0,
 	})
 
-	store, err := memstore.New(65536)
+	encodedSessionKey := os.Getenv("SESSION_KEY")
+	sessionKey, err := base64.StdEncoding.DecodeString(encodedSessionKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	store = sessions.NewCookieStore(sessionKey)
+
+	throttledStore, err := memstore.New(65536)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,7 +95,7 @@ func main() {
 		MaxRate:  throttled.PerMin(30),
 		MaxBurst: 5,
 	}
-	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
+	rateLimiter, err := throttled.NewGCRARateLimiter(throttledStore, quota)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,9 +119,11 @@ func main() {
 	mux.HandleFunc("/api/show", show)
 	mux.HandleFunc("/api/hide", hide)
 	mux.HandleFunc("/api/delete", delete)
+	mux.HandleFunc("/api/export", export)
+	mux.HandleFunc("/api/exportall", exportAll)
 
-	log.Printf("Listening on %v", listenAddress)
-	log.Fatal(http.ListenAndServe(listenAddress, httpRateLimiter.RateLimit(mux)))
+	log.Printf("Listening on %v", *listenAddress)
+	log.Fatal(http.ListenAndServe(*listenAddress, httpRateLimiter.RateLimit(mux)))
 }
 
 func index(writer http.ResponseWriter, request *http.Request) {
@@ -386,5 +408,43 @@ func changeVisibility(writer http.ResponseWriter, request *http.Request, visibil
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func export(writer http.ResponseWriter, request *http.Request) {
+	exportQuestions(writer, request, false)
+}
+
+func exportAll(writer http.ResponseWriter, request *http.Request) {
+	exportQuestions(writer, request, true)
+}
+
+func exportQuestions(writer http.ResponseWriter, request *http.Request, includeHidden bool) {
+	session, _ := store.Get(request, "session")
+
+	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+		http.Error(writer, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	writer.Header().Set("Content-Disposition", "attachment; filename=\"questions.txt\"")
+
+	lenQuestions, err := rdb.LLen(ctx, "gutefrage.questions").Result()
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for i := int64(0); i < lenQuestions; i++ {
+		visibility, err := rdb.LIndex(ctx, "gutefrage.visibility", i).Int()
+		text, err := rdb.LIndex(ctx, "gutefrage.questions", i).Result()
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if visibility != Deleted && (includeHidden || visibility == Visible) {
+			fmt.Fprintln(writer, text)
+		}
 	}
 }

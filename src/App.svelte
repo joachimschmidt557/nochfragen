@@ -4,6 +4,7 @@
 
   import Ask from "./Ask.svelte";
   import List from "./List.svelte";
+  import Export from "./Export.svelte";
 
   onMount(() => {
     const interval = setInterval(() => {
@@ -189,6 +190,14 @@
           >
             Delete all questions
           </button>
+          <button
+            type="button"
+            class="btn btn-outline-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#exportModal"
+          >
+            Export
+          </button>
         {/if}
       </div>
     </div>
@@ -292,3 +301,4 @@
     </div>
   </div>
 </div>
+<Export />

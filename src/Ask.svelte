@@ -29,7 +29,7 @@
       <input bind:value={questionText} class="form-control" id="questionText" />
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-primary ms-2"
         disabled={questionText === ""}>Ask</button
       >
     </div>

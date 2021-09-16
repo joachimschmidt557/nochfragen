@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +24,12 @@ const (
 	defaultVisibility = Hidden
 	maxQuestionLen    = 500
 )
+
+type StoredQuestion struct {
+	Text       string `redis:"text"`
+	Upvotes    int    `redis:"upvotes"`
+	Visibility int    `redis:"visibility"`
+}
 
 type Question struct {
 	Id         int    `json:"id"`
@@ -150,32 +154,18 @@ func login(writer http.ResponseWriter, request *http.Request) {
 			LoggedIn: loggedIn,
 		}
 
-		jsonResult, err := json.Marshal(response)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		_, err = io.WriteString(writer, string(jsonResult))
+		encoder := json.NewEncoder(writer)
+		err := encoder.Encode(response)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	case "POST":
-		requestBody, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			log.Printf("Error reading HTTP request, ignoring request: %v", err)
-			return
-		}
-
 		var requestData LoginRequest
-		err = json.Unmarshal([]byte(requestBody), &requestData)
-		if err != nil {
-			log.Printf("Error reading HTTP request, ignoring request: %v", err)
-			return
-		}
+		decoder := json.NewDecoder(request.Body)
+		err := decoder.Decode(&requestData)
 
-		password, err := rdb.Get(ctx, "gutefrage.password").Result()
+		password, err := rdb.Get(ctx, "gutefrage:password").Result()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -210,6 +200,36 @@ func logout(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
+func getNumQuestions() (int, error) {
+	result, err := rdb.Get(ctx, "num-questions").Int()
+	if err != nil {
+		switch err.(type) {
+		case redis.Error:
+			return 0, nil
+		default:
+			return 0, err
+		}
+	} else {
+		return result, nil
+	}
+}
+
+func getStoredQuestion(id int) (StoredQuestion, error) {
+	var storedQuestion StoredQuestion
+	key := fmt.Sprintf("question:%v", id)
+	result := rdb.HMGet(ctx, key, "text", "visibility", "upvotes")
+	if err := result.Err(); err != nil {
+		return StoredQuestion{}, err
+	}
+
+	err := result.Scan(&storedQuestion)
+	if err != nil {
+		return StoredQuestion{}, err
+	}
+
+	return storedQuestion, nil
+}
+
 func questions(writer http.ResponseWriter, request *http.Request) {
 	session, _ := store.Get(request, "session")
 
@@ -218,60 +238,44 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 		auth, ok := session.Values["authenticated"].(bool)
 		loggedIn := ok && auth
 
-		lenQuestions, err := rdb.LLen(ctx, "gutefrage.questions").Result()
+		lenQuestions, err := getNumQuestions()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		filteredQuestions := []Question{}
-		for i := int64(0); i < lenQuestions; i++ {
-			visibility, err := rdb.LIndex(ctx, "gutefrage.visibility", i).Int()
-			text, err := rdb.LIndex(ctx, "gutefrage.questions", i).Result()
-			upvotes, err := rdb.LIndex(ctx, "gutefrage.upvotes", i).Int()
+		for i := 0; i < lenQuestions; i++ {
+			storedQuestion, err := getStoredQuestion(i)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			if visibility != Deleted && (loggedIn || visibility == Visible) {
+			if storedQuestion.Visibility != Deleted && (loggedIn || storedQuestion.Visibility == Visible) {
 				voted, ok := session.Values[i].(bool)
 
 				question := Question{
 					Id:         int(i),
-					Text:       text,
-					Upvotes:    upvotes,
-					Visibility: visibility,
+					Text:       storedQuestion.Text,
+					Upvotes:    storedQuestion.Upvotes,
+					Visibility: storedQuestion.Visibility,
 					Upvoted:    ok && voted,
 				}
 				filteredQuestions = append(filteredQuestions, question)
 			}
 		}
 
-		jsonResult, err := json.Marshal(filteredQuestions)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		_, err = io.WriteString(writer, string(jsonResult))
+		encoder := json.NewEncoder(writer)
+		err = encoder.Encode(filteredQuestions)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	case "POST":
-		requestBody, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			log.Printf("Error reading HTTP request, ignoring request: %v", err)
-			return
-		}
-
 		var requestData AddQuestionRequest
-		err = json.Unmarshal([]byte(requestBody), &requestData)
-		if err != nil {
-			log.Printf("Error reading HTTP request, ignoring request: %v", err)
-			return
-		}
+		decoder := json.NewDecoder(request.Body)
+		err := decoder.Decode(&requestData)
 
 		if requestData.Text == "" {
 			http.Error(writer, "Empty question", http.StatusBadRequest)
@@ -283,10 +287,15 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		// TODO race condition
-		err = rdb.RPush(ctx, "gutefrage.visibility", defaultVisibility).Err()
-		err = rdb.RPush(ctx, "gutefrage.questions", requestData.Text).Err()
-		err = rdb.RPush(ctx, "gutefrage.upvotes", 0).Err()
+		newLen, err := rdb.Incr(ctx, "num-questions").Result()
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		id := newLen - 1
+		key := fmt.Sprintf("question:%v", id)
+		err = rdb.HSet(ctx, key, "text", requestData.Text, "visibility", defaultVisibility, "upvotes", 0).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -297,9 +306,7 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		err := rdb.Del(ctx, "gutefrage.visibility").Err()
-		err = rdb.Del(ctx, "gutefrage.visibility").Err()
-		err = rdb.Del(ctx, "gutefrage.questions").Err()
+		err := rdb.Set(ctx, "num-questions", 0, 0).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -313,34 +320,29 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 func upvote(writer http.ResponseWriter, request *http.Request) {
 	session, _ := store.Get(request, "session")
 
-	requestBody, err := ioutil.ReadAll(request.Body)
-	if err != nil {
-		log.Printf("Error reading HTTP request, ignoring request: %v", err)
-		return
-	}
-
 	var requestData ModifyQuestionRequest
-	err = json.Unmarshal([]byte(requestBody), &requestData)
+	decoder := json.NewDecoder(request.Body)
+	err := decoder.Decode(&requestData)
 	if err != nil {
 		log.Printf("Error reading HTTP request, ignoring request: %v", err)
 		return
 	}
 
-	id := int64(requestData.Id)
+	id := requestData.Id
 	if voted, ok := session.Values[id].(bool); !ok || !voted {
-		lenQuestions, err := rdb.LLen(ctx, "gutefrage.questions").Result()
+		lenQuestions, err := getNumQuestions()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		if id >= lenQuestions {
-			http.Error(writer, err.Error(), http.StatusBadRequest)
+			http.Error(writer, "ID does not exist", http.StatusBadRequest)
 			return
 		}
 
-		upvotes, err := rdb.LIndex(ctx, "gutefrage.upvotes", id).Int()
-		err = rdb.LSet(ctx, "gutefrage.upvotes", id, upvotes+1).Err()
+		key := fmt.Sprintf("question:%v", id)
+		err = rdb.HIncrBy(ctx, key, "upvotes", 1).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -378,33 +380,25 @@ func changeVisibility(writer http.ResponseWriter, request *http.Request, visibil
 		return
 	}
 
-	requestBody, err := ioutil.ReadAll(request.Body)
-	if err != nil {
-		log.Printf("Error reading HTTP request, ignoring request: %v", err)
-		return
-	}
-
 	var requestData ModifyQuestionRequest
-	err = json.Unmarshal([]byte(requestBody), &requestData)
-	if err != nil {
-		log.Printf("Error reading HTTP request, ignoring request: %v", err)
-		return
-	}
+	decoder := json.NewDecoder(request.Body)
+	err := decoder.Decode(&requestData)
 
-	id := int64(requestData.Id)
+	id := requestData.Id
 
-	lenQuestions, err := rdb.LLen(ctx, "gutefrage.questions").Result()
+	lenQuestions, err := getNumQuestions()
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if id >= lenQuestions {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
+		http.Error(writer, "ID does not exist", http.StatusBadRequest)
 		return
 	}
 
-	err = rdb.LSet(ctx, "gutefrage.visibility", id, visibility).Err()
+	key := fmt.Sprintf("question:%v", id)
+	err = rdb.HSet(ctx, key, "visibility", visibility).Err()
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
@@ -429,22 +423,21 @@ func exportQuestions(writer http.ResponseWriter, request *http.Request, includeH
 
 	writer.Header().Set("Content-Disposition", "attachment; filename=\"questions.txt\"")
 
-	lenQuestions, err := rdb.LLen(ctx, "gutefrage.questions").Result()
+	lenQuestions, err := getNumQuestions()
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	for i := int64(0); i < lenQuestions; i++ {
-		visibility, err := rdb.LIndex(ctx, "gutefrage.visibility", i).Int()
-		text, err := rdb.LIndex(ctx, "gutefrage.questions", i).Result()
+	for i := 0; i < lenQuestions; i++ {
+		storedQuestion, err := getStoredQuestion(i)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if visibility != Deleted && (includeHidden || visibility == Visible) {
-			fmt.Fprintln(writer, text)
+		if storedQuestion.Visibility != Deleted && (includeHidden || storedQuestion.Visibility == Visible) {
+			fmt.Fprintln(writer, storedQuestion.Text)
 		}
 	}
 }

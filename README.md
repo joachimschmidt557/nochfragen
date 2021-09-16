@@ -41,5 +41,5 @@ Usage of ./gutefrage:
 
 ## Configuration
 
-- `gutefrage.password` in redis: The password required to access
+- `gutefrage:password` in redis: The password required to access
   moderation features

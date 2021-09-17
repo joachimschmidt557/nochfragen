@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
@@ -23,12 +24,18 @@ const (
 	Deleted
 	defaultVisibility = Hidden
 	maxQuestionLen    = 500
+	keyPrefix         = "gutefrage:"
 )
 
 type StoredQuestion struct {
 	Text       string `redis:"text"`
 	Upvotes    int    `redis:"upvotes"`
 	Visibility int    `redis:"visibility"`
+}
+
+type QuestionRange struct {
+	Start int
+	End   int
 }
 
 type Question struct {
@@ -165,7 +172,7 @@ func login(writer http.ResponseWriter, request *http.Request) {
 		decoder := json.NewDecoder(request.Body)
 		err := decoder.Decode(&requestData)
 
-		password, err := rdb.Get(ctx, "gutefrage:password").Result()
+		password, err := rdb.Get(ctx, fmt.Sprintf("%vpassword", keyPrefix)).Result()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -200,28 +207,46 @@ func logout(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func getNumQuestions() (int, error) {
-	result, err := rdb.Get(ctx, "num-questions").Int()
+func (questionRange QuestionRange) validId(id int) bool {
+	return questionRange.Start <= id && id < questionRange.End
+}
+
+func getQuestionRange() (QuestionRange, error) {
+	result, err := rdb.MGet(ctx, fmt.Sprintf("%vquestions-start", keyPrefix), fmt.Sprintf("%vquestions-end", keyPrefix)).Result()
 	if err != nil {
-		switch err.(type) {
-		case redis.Error:
-			return 0, nil
-		default:
-			return 0, err
-		}
-	} else {
-		return result, nil
+		return QuestionRange{}, err
 	}
+
+	questionRange := QuestionRange{
+		Start: 0,
+		End:   0,
+	}
+	if str, ok := result[0].(string); ok {
+		start, err := strconv.ParseInt(str, 10, 0)
+		if err != nil {
+			return QuestionRange{}, err
+		}
+		questionRange.Start = int(start)
+	}
+	if str, ok := result[1].(string); ok {
+		end, err := strconv.ParseInt(str, 10, 0)
+		if err != nil {
+			return QuestionRange{}, err
+		}
+		questionRange.End = int(end)
+	}
+
+	return questionRange, nil
 }
 
 func getStoredQuestion(id int) (StoredQuestion, error) {
-	var storedQuestion StoredQuestion
-	key := fmt.Sprintf("question:%v", id)
+	key := fmt.Sprintf("%vquestion:%v", keyPrefix, id)
 	result := rdb.HMGet(ctx, key, "text", "visibility", "upvotes")
 	if err := result.Err(); err != nil {
 		return StoredQuestion{}, err
 	}
 
+	var storedQuestion StoredQuestion
 	err := result.Scan(&storedQuestion)
 	if err != nil {
 		return StoredQuestion{}, err
@@ -238,14 +263,14 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 		auth, ok := session.Values["authenticated"].(bool)
 		loggedIn := ok && auth
 
-		lenQuestions, err := getNumQuestions()
+		questionRange, err := getQuestionRange()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		filteredQuestions := []Question{}
-		for i := 0; i < lenQuestions; i++ {
+		for i := questionRange.Start; i < questionRange.End; i++ {
 			storedQuestion, err := getStoredQuestion(i)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -287,14 +312,14 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		newLen, err := rdb.Incr(ctx, "num-questions").Result()
+		newLen, err := rdb.Incr(ctx, fmt.Sprintf("%vquestions-end", keyPrefix)).Result()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		id := newLen - 1
-		key := fmt.Sprintf("question:%v", id)
+		key := fmt.Sprintf("%vquestion:%v", keyPrefix, id)
 		err = rdb.HSet(ctx, key, "text", requestData.Text, "visibility", defaultVisibility, "upvotes", 0).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -306,7 +331,13 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		err := rdb.Set(ctx, "num-questions", 0, 0).Err()
+		questionRange, err := getQuestionRange()
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = rdb.Set(ctx, fmt.Sprintf("%vquestions-start", keyPrefix), questionRange.End, 0).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -330,18 +361,18 @@ func upvote(writer http.ResponseWriter, request *http.Request) {
 
 	id := requestData.Id
 	if voted, ok := session.Values[id].(bool); !ok || !voted {
-		lenQuestions, err := getNumQuestions()
+		questionRange, err := getQuestionRange()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if id >= lenQuestions {
+		if !questionRange.validId(id) {
 			http.Error(writer, "ID does not exist", http.StatusBadRequest)
 			return
 		}
 
-		key := fmt.Sprintf("question:%v", id)
+		key := fmt.Sprintf("%vquestion:%v", keyPrefix, id)
 		err = rdb.HIncrBy(ctx, key, "upvotes", 1).Err()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -386,18 +417,18 @@ func changeVisibility(writer http.ResponseWriter, request *http.Request, visibil
 
 	id := requestData.Id
 
-	lenQuestions, err := getNumQuestions()
+	questionRange, err := getQuestionRange()
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if id >= lenQuestions {
+	if !questionRange.validId(id) {
 		http.Error(writer, "ID does not exist", http.StatusBadRequest)
 		return
 	}
 
-	key := fmt.Sprintf("question:%v", id)
+	key := fmt.Sprintf("%vquestion:%v", keyPrefix, id)
 	err = rdb.HSet(ctx, key, "visibility", visibility).Err()
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -423,13 +454,13 @@ func exportQuestions(writer http.ResponseWriter, request *http.Request, includeH
 
 	writer.Header().Set("Content-Disposition", "attachment; filename=\"questions.txt\"")
 
-	lenQuestions, err := getNumQuestions()
+	questionRange, err := getQuestionRange()
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	for i := 0; i < lenQuestions; i++ {
+	for i := questionRange.Start; i < questionRange.End; i++ {
 		storedQuestion, err := getStoredQuestion(i)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)

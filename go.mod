@@ -1,4 +1,4 @@
-module github.com/joachimschmidt557/gutefrage
+module github.com/joachimschmidt557/nochfragen
 
 go 1.16
 

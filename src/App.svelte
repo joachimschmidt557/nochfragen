@@ -208,7 +208,7 @@
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
-      This software is <a href="https://github.com/joachimschmidt557/gutefrage"
+      This software is <a href="https://github.com/joachimschmidt557/nochfragen"
         >open source</a
       >.
     </p>

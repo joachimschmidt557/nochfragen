@@ -1,4 +1,4 @@
-# gutefrage
+# nochfragen
 
 A small web app for asking and moderating questions
 
@@ -12,7 +12,7 @@ also delete questions, making them hidden for everyone.
 Any user can upvote a question, but a session cannot give more than
 one upvote for a single question.
 
-`gutefrage` uses redis as an emphemeral storage backend.
+`nochfragen` uses redis as an emphemeral storage backend.
 
 ## Building
 
@@ -32,7 +32,7 @@ npm run build
 ## Usage
 
 ```
-Usage of ./gutefrage:
+Usage of ./nochfragen:
   -listen-address string
     	Address to listen for connections (default "0.0.0.0:8000")
   -redis-address string
@@ -41,5 +41,5 @@ Usage of ./gutefrage:
 
 ## Configuration
 
-- `gutefrage:password` in redis: The password required to access
+- `nochfragen:password` in redis: The password required to access
   moderation features

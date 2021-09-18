@@ -24,7 +24,7 @@ const (
 	Deleted
 	defaultVisibility = Hidden
 	maxQuestionLen    = 500
-	keyPrefix         = "gutefrage:"
+	keyPrefix         = "nochfragen:"
 )
 
 type StoredQuestion struct {

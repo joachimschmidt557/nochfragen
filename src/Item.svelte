@@ -7,7 +7,7 @@
   const deleted = 2;
 
   async function upvote() {
-    await fetch(`/api/upvote`, {
+    await fetch(`api/upvote`, {
       method: "PUT",
       body: JSON.stringify({ id: item.id }),
     }).then(() => {
@@ -17,21 +17,21 @@
   }
 
   async function show() {
-    await fetch(`/api/show`, {
+    await fetch(`api/show`, {
       method: "PUT",
       body: JSON.stringify({ id: item.id }),
     }).then(() => (item.visibility = visible));
   }
 
   async function hide() {
-    await fetch(`/api/hide`, {
+    await fetch(`api/hide`, {
       method: "PUT",
       body: JSON.stringify({ id: item.id }),
     }).then(() => (item.visibility = hidden));
   }
 
   async function del() {
-    await fetch(`/api/delete`, {
+    await fetch(`api/delete`, {
       method: "PUT",
       body: JSON.stringify({ id: item.id }),
     }).then(() => (item.visibility = deleted));

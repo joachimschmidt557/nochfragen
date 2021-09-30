@@ -5,7 +5,7 @@
   let includeHidden = false;
 
   async function exportQuestions() {
-    await fetch(`/api/export`, {
+    await fetch(`api/export`, {
       method: "GET",
       body: JSON.stringify({ includeHidden: includeHidden }),
     })
@@ -70,7 +70,7 @@
           type="button"
           class="btn btn-primary"
           role="button"
-          href={includeHidden ? "/api/exportall" : "/api/export"}>Export</a
+          href={includeHidden ? "api/exportall" : "api/export"}>Export</a
         >
       </div>
     </div>

@@ -28,7 +28,7 @@
 
   async function updateQuestions() {
     updating = true;
-    await fetch(`/api/questions`)
+    await fetch(`api/questions`)
       .then((response) => {
         if (response.status !== 200) {
           throw new Error(
@@ -47,7 +47,7 @@
   }
 
   async function getLoginStatus() {
-    await fetch(`/api/login`)
+    await fetch(`api/login`)
       .then((response) => response.json())
       .then((data) => {
         loggedIn = data.loggedIn;
@@ -56,7 +56,7 @@
   }
 
   async function login() {
-    await fetch(`/api/login`, {
+    await fetch(`api/login`, {
       method: "POST",
       body: JSON.stringify({ password: password }),
     })
@@ -82,7 +82,7 @@
   }
 
   async function logout() {
-    await fetch(`/api/logout`, { method: "POST" })
+    await fetch(`api/logout`, { method: "POST" })
       .then((response) => {
         if (response.status !== 200) {
           throw new Error("Error while logging out");
@@ -95,7 +95,7 @@
   }
 
   async function deleteAllQuestions() {
-    await fetch(`/api/questions`, { method: "DELETE" })
+    await fetch(`api/questions`, { method: "DELETE" })
       .then((response) => {
         if (response.status !== 200) {
           throw new Error("Error while deleting all questions");

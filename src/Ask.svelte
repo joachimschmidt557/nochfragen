@@ -6,7 +6,7 @@
   let questionText = "";
 
   async function submitQuestion() {
-    await fetch(`/api/questions`, {
+    await fetch(`api/questions`, {
       method: "POST",
       body: JSON.stringify({ text: questionText }),
     })

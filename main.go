@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
@@ -65,11 +66,13 @@ type LoginStatusResponse struct {
 var ctx = context.Background()
 var rdb *redis.Client
 var store *sessions.CookieStore
+var rootDir string
 
 func main() {
 	listenAddress := flag.String("listen-address", "0.0.0.0:8000", "Address to listen for connections")
 	redisAddress := flag.String("redis-address", "localhost:6379", "Address to connect to redis")
 	generateSessionKey := flag.Bool("generate-session-key", false, "Generate and print a session key and exit instead of running server")
+	flag.StringVar(&rootDir, "root-dir", "public/", "Path to the static HTML, CSS and JS content")
 	flag.Parse()
 
 	if *generateSessionKey {
@@ -122,7 +125,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", index)
-	mux.Handle("/build/", http.StripPrefix("/build/", http.FileServer(http.Dir("public/build"))))
+	mux.Handle("/build/", http.StripPrefix("/build/", http.FileServer(http.Dir(filepath.Join(rootDir, "build")))))
 	mux.HandleFunc("/api/login", login)
 	mux.HandleFunc("/api/logout", logout)
 	mux.HandleFunc("/api/questions", questions)
@@ -146,7 +149,7 @@ func index(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	http.ServeFile(writer, request, "public/index.html")
+	http.ServeFile(writer, request, filepath.Join(rootDir, "index.html"))
 }
 
 func login(writer http.ResponseWriter, request *http.Request) {

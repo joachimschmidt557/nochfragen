@@ -11,8 +11,10 @@
       body: JSON.stringify({ text: questionText }),
     })
       .then((response) => {
-        if (response.status !== 200) {
-          throw new Error(`Server returned ${response.status}.`);
+        if (!response.ok) {
+          throw new Error(
+            `Server returned ${response.status} ${response.statusText}.`
+          );
         }
 
         questionText = "";

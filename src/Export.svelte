@@ -1,28 +1,7 @@
 <script>
   import * as bootstrap from "bootstrap";
 
-  let exportModalAlert = "";
   let includeHidden = false;
-
-  async function exportQuestions() {
-    await fetch(`api/export`, {
-      method: "GET",
-      body: JSON.stringify({ includeHidden: includeHidden }),
-    })
-      .then((response) => {
-        if (response.status !== 200) {
-          throw new Error("Error while exporting questions");
-        }
-
-        exportModalAlert = "";
-        var exportModal = bootstrap.Modal.getOrCreateInstance(
-          document.getElementById("exportModal"),
-          {}
-        );
-        exportModal.hide();
-      })
-      .catch((error) => (exportModalAlert = error));
-  }
 </script>
 
 <div
@@ -44,11 +23,6 @@
         />
       </div>
       <div class="modal-body">
-        {#if exportModalAlert !== ""}
-          <div class="alert alert-danger" role="alert">
-            {exportModalAlert}
-          </div>
-        {/if}
         <p>You can export all questions as a plain text file.</p>
         <div class="form-check form-switch">
           <input

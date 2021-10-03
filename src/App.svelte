@@ -30,9 +30,9 @@
     updating = true;
     await fetch(`api/questions`)
       .then((response) => {
-        if (response.status !== 200) {
+        if (!response.ok) {
           throw new Error(
-            `Error fetching questions. Server returned ${response.status}.`
+            `Error fetching questions. Server returned ${response.status} ${response.statusText}.`
           );
         }
 
@@ -63,7 +63,7 @@
       .then((response) => {
         if (response.status === 403) {
           throw new Error("Wrong password");
-        } else if (response.status !== 200) {
+        } else if (!response.ok) {
           throw new Error("Error while logging in");
         }
 
@@ -84,7 +84,7 @@
   async function logout() {
     await fetch(`api/logout`, { method: "POST" })
       .then((response) => {
-        if (response.status !== 200) {
+        if (!response.ok) {
           throw new Error("Error while logging out");
         }
 
@@ -97,7 +97,7 @@
   async function deleteAllQuestions() {
     await fetch(`api/questions`, { method: "DELETE" })
       .then((response) => {
-        if (response.status !== 200) {
+        if (!response.ok) {
           throw new Error("Error while deleting all questions");
         }
 

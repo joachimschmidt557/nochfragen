@@ -2,19 +2,16 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/sessions"
+	"github.com/rbcervilla/redisstore/v8"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
 )
@@ -26,6 +23,7 @@ const (
 	defaultVisibility = Hidden
 	maxQuestionLen    = 500
 	keyPrefix         = "nochfragen:"
+	cookieName        = "nochfragen_session"
 )
 
 type StoredQuestion struct {
@@ -65,27 +63,14 @@ type LoginStatusResponse struct {
 
 var ctx = context.Background()
 var rdb *redis.Client
-var store *sessions.CookieStore
+var store *redisstore.RedisStore
 var rootDir string
 
 func main() {
 	listenAddress := flag.String("listen-address", "0.0.0.0:8000", "Address to listen for connections")
 	redisAddress := flag.String("redis-address", "localhost:6379", "Address to connect to redis")
-	generateSessionKey := flag.Bool("generate-session-key", false, "Generate and print a session key and exit instead of running server")
 	flag.StringVar(&rootDir, "root-dir", "public/", "Path to the static HTML, CSS and JS content")
 	flag.Parse()
-
-	if *generateSessionKey {
-		sessionKey := make([]byte, 32)
-		_, err := rand.Read(sessionKey)
-		if err != nil {
-			log.Fatal(err)
-		}
-		encoded := base64.StdEncoding.EncodeToString(sessionKey)
-
-		fmt.Printf("SESSION_KEY=%v\n", encoded)
-		return
-	}
 
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     *redisAddress,
@@ -93,12 +78,12 @@ func main() {
 		DB:       0,
 	})
 
-	encodedSessionKey := os.Getenv("SESSION_KEY")
-	sessionKey, err := base64.StdEncoding.DecodeString(encodedSessionKey)
+	localStore, err := redisstore.NewRedisStore(context.Background(), rdb)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to create redis session store: ", err)
 	}
-	store = sessions.NewCookieStore(sessionKey)
+	store = localStore
+	store.KeyPrefix(fmt.Sprintf("%vcookies:", keyPrefix))
 
 	throttledStore, err := memstore.New(65536)
 	if err != nil {
@@ -106,7 +91,7 @@ func main() {
 	}
 
 	quota := throttled.RateQuota{
-		MaxRate:  throttled.PerMin(30),
+		MaxRate:  throttled.PerMin(120),
 		MaxBurst: 5,
 	}
 	rateLimiter, err := throttled.NewGCRARateLimiter(throttledStore, quota)
@@ -118,7 +103,7 @@ func main() {
 		RateLimiter: rateLimiter,
 		VaryBy: &throttled.VaryBy{
 			Path:    true,
-			Cookies: []string{"session"},
+			Cookies: []string{cookieName},
 		},
 	}
 
@@ -141,7 +126,7 @@ func main() {
 }
 
 func index(writer http.ResponseWriter, request *http.Request) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	err := session.Save(request, writer)
 	if err != nil {
@@ -153,7 +138,7 @@ func index(writer http.ResponseWriter, request *http.Request) {
 }
 
 func login(writer http.ResponseWriter, request *http.Request) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	switch request.Method {
 	case "GET":
@@ -196,7 +181,7 @@ func login(writer http.ResponseWriter, request *http.Request) {
 }
 
 func logout(writer http.ResponseWriter, request *http.Request) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	switch request.Method {
 	case "POST":
@@ -259,7 +244,7 @@ func getStoredQuestion(id int) (StoredQuestion, error) {
 }
 
 func questions(writer http.ResponseWriter, request *http.Request) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	switch request.Method {
 	case "GET":
@@ -352,7 +337,7 @@ func questions(writer http.ResponseWriter, request *http.Request) {
 }
 
 func upvote(writer http.ResponseWriter, request *http.Request) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	var requestData ModifyQuestionRequest
 	decoder := json.NewDecoder(request.Body)
@@ -407,7 +392,7 @@ func delete(writer http.ResponseWriter, request *http.Request) {
 }
 
 func changeVisibility(writer http.ResponseWriter, request *http.Request, visibility int) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
 		http.Error(writer, "Forbidden", http.StatusForbidden)
@@ -448,7 +433,7 @@ func exportAll(writer http.ResponseWriter, request *http.Request) {
 }
 
 func exportQuestions(writer http.ResponseWriter, request *http.Request, includeHidden bool) {
-	session, _ := store.Get(request, "session")
+	session, _ := store.Get(request, cookieName)
 
 	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
 		http.Error(writer, "Forbidden", http.StatusForbidden)

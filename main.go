@@ -102,8 +102,7 @@ func main() {
 	httpRateLimiter := throttled.HTTPRateLimiter{
 		RateLimiter: rateLimiter,
 		VaryBy: &throttled.VaryBy{
-			Path:    true,
-			Cookies: []string{cookieName},
+			Headers: []string{"X-Forwarded-For"},
 		},
 	}
 

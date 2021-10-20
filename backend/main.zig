@@ -24,7 +24,6 @@ const Question = struct {
 };
 
 const Context = struct {
-    allocator: *std.mem.Allocator,
     redis_client: Client,
 };
 
@@ -37,7 +36,6 @@ pub fn main() !void {
     const allocator = &gpa.allocator;
 
     var context: Context = .{
-        .allocator = allocator,
         .redis_client = undefined,
     };
 
@@ -61,6 +59,8 @@ pub fn main() !void {
             router.get("/build/*", serveFs),
             router.get("/api/questions", listQuestions),
             router.post("/api/questions", addQuestion),
+            router.get("/api/export", exportQuestions),
+            router.get("/api/exportall", exportAllQuestions),
             // router.put("/api/question/:id", modifyQuestion),
         }),
     );
@@ -83,8 +83,7 @@ fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {
 }
 
 /// Serves static content
-fn serveFs(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    _ = ctx;
+fn serveFs(_: *Context, response: *http.Response, request: http.Request) !void {
     try fs.serve({}, response, request);
 }
 
@@ -93,33 +92,52 @@ fn badRequest(response: *http.Response, message: []const u8) !void {
     try response.body.print("{s}\n", .{message});
 }
 
-fn listQuestions(ctx: *Context, response: *http.Response, _: http.Request) !void {
-    var arena = std.heap.ArenaAllocator.init(ctx.allocator);
-    const allocator = &arena.allocator;
-    defer arena.deinit();
+const QuestionIterator = struct {
+    allocator: *std.mem.Allocator,
+    redis_client: *Client,
+    end: u32,
+    id: u32,
 
-    const question_range = try ctx.redis_client.send([2]?u32, .{
-        "MGET",
-        "nochfragen:questions-start",
-        "nochfragen:questions-end",
-    });
-    const start = question_range[0] orelse 0;
-    const end = question_range[1] orelse 0;
+    pub fn init(allocator: *std.mem.Allocator, redis_client: *Client) !QuestionIterator {
+        const question_range = try redis_client.send([2]?u32, .{
+            "MGET",
+            "nochfragen:questions-start",
+            "nochfragen:questions-end",
+        });
+        const start = question_range[0] orelse 0;
+        const end = question_range[1] orelse 0;
+
+        return QuestionIterator{
+            .allocator = allocator,
+            .redis_client = redis_client,
+            .end = end,
+            .id = start,
+        };
+    }
+
+    pub fn next(self: *QuestionIterator) !?Question {
+        if (self.id >= self.end) return null;
+
+        const key = try std.fmt.allocPrint(self.allocator, "nochfragen:questions:{}", .{self.id});
+        self.id += 1;
+
+        return try self.redis_client.sendAlloc(Question, self.allocator, HMGETQuestion.init(key));
+    }
+};
+
+fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    var iter = try QuestionIterator.init(request.arena, &ctx.redis_client);
 
     var json_write_stream = std.json.writeStream(response.writer(), 4);
     try json_write_stream.beginArray();
 
-    var id = start;
-    while (id < end) : (id += 1) {
-        const key = try std.fmt.allocPrint(allocator, "nochfragen:questions:{}", .{id});
-        const question = try ctx.redis_client.sendAlloc(Question, allocator, HMGETQuestion.init(key));
-
+    while (try iter.next()) |question| {
         if (question.visibility != @enumToInt(Visibility.deleted)) {
             try json_write_stream.arrayElem();
             try json_write_stream.beginObject();
 
             try json_write_stream.objectField("id");
-            try json_write_stream.emitNumber(id);
+            try json_write_stream.emitNumber(iter.id - 1);
 
             try json_write_stream.objectField("text");
             try json_write_stream.emitString(question.text);
@@ -140,10 +158,35 @@ fn listQuestions(ctx: *Context, response: *http.Response, _: http.Request) !void
     try json_write_stream.endArray();
 }
 
+fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    try exportQuestionsHidden(ctx, response, request, false);
+}
+
+fn exportAllQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    try exportQuestionsHidden(ctx, response, request, true);
+}
+
+fn exportQuestionsHidden(
+    ctx: *Context,
+    response: *http.Response,
+    request: http.Request,
+    include_hidden: bool,
+) !void {
+    var iter = try QuestionIterator.init(request.arena, &ctx.redis_client);
+
+    try response.headers.put("Content-Disposition", "attachment; filename=\"questions.txt\"");
+
+    while (try iter.next()) |question| {
+        if (question.visibility != @enumToInt(Visibility.deleted) and
+            (include_hidden or question.visibility == @enumToInt(Visibility.visible)))
+        {
+            try response.writer().print("{s}\n", .{question.text});
+        }
+    }
+}
+
 fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    var arena = std.heap.ArenaAllocator.init(ctx.allocator);
-    const allocator = &arena.allocator;
-    defer arena.deinit();
+    const allocator = request.arena;
 
     var token_stream = json.TokenStream.init(request.body());
     const request_data = try json.parse(

@@ -1,5 +1,9 @@
 /node_modules/
 /public/build/
-nochfragen
+zig-out/
+zig-cache/
+
+.gyro/
+deps.zig
 
 .DS_Store

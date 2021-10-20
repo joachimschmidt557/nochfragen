@@ -1,0 +1,22 @@
+pkgs:
+  nochfragen:
+    version: 0.0.0
+    root: src/main.zig
+    description: Small web app for asking and moderating questions
+    license: AGPL-3.0
+    source_url: "https://github.com/joachimschmidt557/nochfragen"
+deps:
+  apple_pie:
+    src:
+      github:
+        user: Luukdegram
+        repo: apple_pie
+        ref: master
+    root: src/apple_pie.zig
+  okredis:
+    src:
+      github:
+        user: kristoff-it
+        repo: zig-okredis
+        ref: master
+    root: src/okredis.zig

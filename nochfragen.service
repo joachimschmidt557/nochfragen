@@ -1,0 +1,36 @@
+[Unit]
+Description=nochfragen live questions web application
+Wants=redis.service
+After=redis.service
+
+[Service]
+User=nochfragen
+Group=nochfragen
+Type=simple
+ExecStart=/opt/nochfragen -root-dir /var/www/nochfragen -listen-address 127.0.0.1:8000
+Restart=always
+RestartSec=5
+
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateMounts=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+RestrictAddressFamilies=AF_INET
+RestrictAddressFamilies=AF_INET6
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

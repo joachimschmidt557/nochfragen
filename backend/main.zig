@@ -6,7 +6,10 @@ const router = http.router;
 const Client = okredis.Client;
 const json = std.json;
 
-pub const io_mode = .evented;
+const Store = @import("Store.zig");
+
+// https://github.com/ziglang/zig/issues/7593
+// pub const io_mode = .evented;
 
 const log = std.log.scoped(.nochfragen);
 const max_question_len = 500;
@@ -67,14 +70,19 @@ pub fn main() !void {
 }
 
 fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    _ = ctx;
-    _ = request;
+    var store = Store{
+        .redis_client = &ctx.redis_client,
+        .options = .{},
+    };
+    const session = try store.get(request.arena, request, "nochfragen_session");
 
     const file = std.fs.cwd().openFile("public/index.html", .{}) catch |err| switch (err) {
         error.FileNotFound => return response.notFound(),
         else => |e| return e,
     };
     defer file.close();
+
+    try session.save(request.arena, request, response);
 
     fs.serveFile(response, "index.html", file) catch |err| switch (err) {
         error.NotAFile => return response.notFound(),

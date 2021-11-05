@@ -60,6 +60,9 @@ pub fn main() !void {
         comptime router.Router(*Context, &.{
             router.get("/", index),
             router.get("/build/*", serveFs),
+            router.get("/api/login", loginStatus),
+            router.post("/api/login", login),
+            router.post("/api/logout", logout),
             router.get("/api/questions", listQuestions),
             router.post("/api/questions", addQuestion),
             router.get("/api/export", exportQuestions),
@@ -70,10 +73,7 @@ pub fn main() !void {
 }
 
 fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    var store = Store{
-        .redis_client = &ctx.redis_client,
-        .options = .{},
-    };
+    var store = Store{ .redis_client = &ctx.redis_client };
     const session = try store.get(request.arena, request, "nochfragen_session");
 
     const file = std.fs.cwd().openFile("public/index.html", .{}) catch |err| switch (err) {
@@ -211,6 +211,49 @@ fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request) !
 
     const key = try std.fmt.allocPrint(allocator, "nochfragen:questions:{}", .{id});
     try ctx.redis_client.send(void, HSETQuestion.init(key, .{ .text = request_data.text }));
+
+    try response.writer().print("OK", .{});
+}
+
+fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+
+    try std.json.stringify(.{ .loggedIn = logged_in }, .{}, response.writer());
+}
+
+fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    const allocator = request.arena;
+
+    var token_stream = json.TokenStream.init(request.body());
+    const request_data = try json.parse(
+        struct { password: []const u8 },
+        &token_stream,
+        .{ .allocator = allocator },
+    );
+
+    const password = try ctx.redis_client.sendAlloc([]const u8, allocator, .{ "GET", "nochfragen:password" });
+    if (std.mem.eql(u8, password, request_data.password)) {
+        var store = Store{ .redis_client = &ctx.redis_client };
+        var session = try store.get(allocator, request, "nochfragen_session");
+        try session.set(bool, "authenticated", true);
+    } else {
+        response.status_code = .forbidden;
+        try response.body.print("Access denied\n", .{});
+    }
+
+    try response.writer().print("OK", .{});
+}
+
+fn logout(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    try session.set(bool, "authenticated", false);
 
     try response.writer().print("OK", .{});
 }

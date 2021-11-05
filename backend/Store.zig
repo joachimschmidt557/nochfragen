@@ -9,7 +9,7 @@ const Options = @import("Options.zig");
 const Cookie = @import("Cookie.zig");
 
 redis_client: *okredis.Client,
-options: Options,
+options: Options = .{},
 
 pub fn get(
     self: *Store,

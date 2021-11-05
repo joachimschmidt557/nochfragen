@@ -53,6 +53,7 @@ pub fn main() !void {
     try fs.init(allocator, .{ .dir_path = "public/build", .base_path = "build" });
     defer fs.deinit();
 
+    @setEvalBranchQuota(10000);
     try http.listenAndServe(
         allocator,
         try std.net.Address.parseIp("127.0.0.1", 8080),
@@ -67,7 +68,7 @@ pub fn main() !void {
             router.post("/api/questions", addQuestion),
             router.get("/api/export", exportQuestions),
             router.get("/api/exportall", exportAllQuestions),
-            // router.put("/api/question/:id", modifyQuestion),
+            router.put("/api/question/:id", modifyQuestion),
         }),
     );
 }
@@ -97,6 +98,11 @@ fn serveFs(_: *Context, response: *http.Response, request: http.Request) !void {
 
 fn badRequest(response: *http.Response, message: []const u8) !void {
     response.status_code = .bad_request;
+    try response.body.print("{s}\n", .{message});
+}
+
+fn forbidden(response: *http.Response, message: []const u8) !void {
+    response.status_code = .forbidden;
     try response.body.print("{s}\n", .{message});
 }
 
@@ -134,13 +140,24 @@ const QuestionIterator = struct {
 };
 
 fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    var iter = try QuestionIterator.init(request.arena, &ctx.redis_client);
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+
+    var iter = try QuestionIterator.init(allocator, &ctx.redis_client);
 
     var json_write_stream = std.json.writeStream(response.writer(), 4);
     try json_write_stream.beginArray();
 
     while (try iter.next()) |question| {
-        if (question.visibility != @enumToInt(Visibility.deleted)) {
+        if (question.visibility != @enumToInt(Visibility.deleted) and
+            (logged_in or question.visibility == @enumToInt(Visibility.visible)))
+        {
+            const str_id = try std.fmt.allocPrint(allocator, "{}", .{iter.id - 1});
+            const upvoted = (try session.get(bool, str_id)) orelse false;
+
             try json_write_stream.arrayElem();
             try json_write_stream.beginObject();
 
@@ -157,7 +174,7 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
             try json_write_stream.emitNumber(question.visibility);
 
             try json_write_stream.objectField("upvoted");
-            try json_write_stream.emitBool(false);
+            try json_write_stream.emitBool(upvoted);
 
             try json_write_stream.endObject();
         }
@@ -180,7 +197,14 @@ fn exportQuestionsHidden(
     request: http.Request,
     include_hidden: bool,
 ) !void {
-    var iter = try QuestionIterator.init(request.arena, &ctx.redis_client);
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+    if (!logged_in) return forbidden(response, "Forbidden");
+
+    var iter = try QuestionIterator.init(allocator, &ctx.redis_client);
 
     try response.headers.put("Content-Disposition", "attachment; filename=\"questions.txt\"");
 
@@ -215,6 +239,45 @@ fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request) !
     try response.writer().print("OK", .{});
 }
 
+fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request, id: u32) !void {
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    if (session.is_new) return forbidden(response, "Access denied");
+
+    const iter = try QuestionIterator.init(allocator, &ctx.redis_client);
+    if (id < iter.id or id >= iter.end) return badRequest(response, "Invalid ID");
+
+    var token_stream = json.TokenStream.init(request.body());
+    const request_data = try json.parse(
+        struct {
+            upvote: bool,
+            visibility: u32,
+        },
+        &token_stream,
+        .{ .allocator = allocator },
+    );
+
+    const key = try std.fmt.allocPrint(allocator, "nochfragen:questions:{}", .{id});
+    if (request_data.upvote) {
+        const str_id = try std.fmt.allocPrint(allocator, "{}", .{id});
+
+        const upvoted = (try session.get(bool, str_id)) orelse false;
+        if (upvoted) return forbidden(response, "Already upvoted");
+
+        try ctx.redis_client.send(void, .{ "HINCRBY", key, "upvotes", 1 });
+        try session.set(bool, str_id, true);
+    } else {
+        const logged_in = (try session.get(bool, "authenticated")) orelse false;
+        if (!logged_in) return forbidden(response, "Forbidden");
+
+        try ctx.redis_client.send(void, .{ "HSET", key, "visibility", request_data.visibility });
+    }
+
+    try response.writer().print("OK", .{});
+}
+
 fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
@@ -240,10 +303,7 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
         var store = Store{ .redis_client = &ctx.redis_client };
         var session = try store.get(allocator, request, "nochfragen_session");
         try session.set(bool, "authenticated", true);
-    } else {
-        response.status_code = .forbidden;
-        try response.body.print("Access denied\n", .{});
-    }
+    } else return forbidden(response, "Access denied");
 
     try response.writer().print("OK", .{});
 }

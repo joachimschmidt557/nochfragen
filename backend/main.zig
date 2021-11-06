@@ -66,6 +66,7 @@ pub fn main() !void {
             router.post("/api/logout", logout),
             router.get("/api/questions", listQuestions),
             router.post("/api/questions", addQuestion),
+            router.delete("/api/questions", deleteAllQuestions),
             router.get("/api/export", exportQuestions),
             router.get("/api/exportall", exportAllQuestions),
             router.put("/api/question/:id", modifyQuestion),
@@ -314,6 +315,19 @@ fn logout(ctx: *Context, response: *http.Response, request: http.Request) !void 
     var store = Store{ .redis_client = &ctx.redis_client };
     var session = try store.get(allocator, request, "nochfragen_session");
     try session.set(bool, "authenticated", false);
+
+    try response.writer().print("OK", .{});
+}
+
+fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+    if (!logged_in) return forbidden(response, "Forbidden");
+
+    try ctx.redis_client.send(void, .{ "COPY", "nochfragen:questions-end", "nochfragen:questions-start" });
 
     try response.writer().print("OK", .{});
 }

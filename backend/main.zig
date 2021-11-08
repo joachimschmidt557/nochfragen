@@ -5,6 +5,7 @@ const fs = http.FileServer;
 const router = http.router;
 const Client = okredis.Client;
 const json = std.json;
+const scrypt = std.crypto.pwhash.scrypt;
 
 const Store = @import("Store.zig");
 
@@ -38,14 +39,35 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = &gpa.allocator;
 
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
+    if (args.len == 1) {
+        startServer(allocator) catch |err| {
+            log.crit("Error during server execution: {}", .{err});
+            std.process.exit(1);
+        };
+    } else if (args.len == 3) {
+        if (std.mem.eql(u8, "set-password", args[1])) {
+            setPassword(allocator, args[2]) catch |err| {
+                log.crit("Error during password setting: {}", .{err});
+                std.process.exit(1);
+            };
+        } else {
+            log.crit("Unknown command", .{});
+        }
+    } else {
+        log.crit("Invalid command-line arguments passed", .{});
+    }
+}
+
+fn startServer(allocator: *std.mem.Allocator) !void {
     var context: Context = .{
         .redis_client = undefined,
     };
 
     const addr = try std.net.Address.parseIp4("127.0.0.1", 6379);
-    var connection = std.net.tcpConnectToAddress(addr) catch |err| {
-        return log.crit("Error connecting to redis: {}", .{err});
-    };
+    var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
 
     try context.redis_client.init(connection);
     defer context.redis_client.close();
@@ -72,6 +94,24 @@ pub fn main() !void {
             router.put("/api/question/:id", modifyQuestion),
         }),
     );
+}
+
+fn setPassword(allocator: *std.mem.Allocator, password: []const u8) !void {
+    const addr = try std.net.Address.parseIp4("127.0.0.1", 6379);
+    var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
+
+    var redis_client: Client = undefined;
+    try redis_client.init(connection);
+    defer redis_client.close();
+
+    var buf: [128]u8 = undefined;
+    const hashed_password = try scrypt.strHash(password, .{
+        .allocator = allocator,
+        .params = scrypt.Params.interactive,
+        .encoding = .crypt,
+    }, &buf);
+
+    try redis_client.send(void, .{ "SET", "nochfragen:password", hashed_password });
 }
 
 fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -299,12 +339,12 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
         .{ .allocator = allocator },
     );
 
-    const password = try ctx.redis_client.sendAlloc([]const u8, allocator, .{ "GET", "nochfragen:password" });
-    if (std.mem.eql(u8, password, request_data.password)) {
-        var store = Store{ .redis_client = &ctx.redis_client };
-        var session = try store.get(allocator, request, "nochfragen_session");
-        try session.set(bool, "authenticated", true);
-    } else return forbidden(response, "Access denied");
+    const hashed_password = try ctx.redis_client.sendAlloc([]const u8, allocator, .{ "GET", "nochfragen:password" });
+    scrypt.strVerify(hashed_password, request_data.password, .{ .allocator = allocator }) catch return forbidden(response, "Access denied");
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    try session.set(bool, "authenticated", true);
 
     try response.writer().print("OK", .{});
 }

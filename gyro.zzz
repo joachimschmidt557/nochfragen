@@ -7,16 +7,17 @@ pkgs:
     source_url: "https://github.com/joachimschmidt557/nochfragen"
 deps:
   apple_pie:
-    src:
-      github:
-        user: Luukdegram
-        repo: apple_pie
-        ref: master
-    root: src/apple_pie.zig
+    git:
+      url: "https://github.com/Luukdegram/apple_pie.git"
+      ref: master
+      root: src/apple_pie.zig
   okredis:
-    src:
-      github:
-        user: kristoff-it
-        repo: zig-okredis
-        ref: master
-    root: src/okredis.zig
+    git:
+      url: "https://github.com/kristoff-it/zig-okredis.git"
+      ref: master
+      root: src/okredis.zig
+  clap:
+    git:
+      url: "https://github.com/Hejsil/zig-clap.git"
+      ref: zig-master
+      root: clap.zig

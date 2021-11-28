@@ -1,2 +1,3 @@
-github Luukdegram apple_pie master src/apple_pie.zig 7214291fc4e26f2da3d5fd1bacf79bbc5e4a119b
-github kristoff-it zig-okredis master src/okredis.zig 1a929a467a0f9cbc68c6795096e5a39decce9133
+git https://github.com/Luukdegram/apple_pie.git master src/apple_pie.zig 7214291fc4e26f2da3d5fd1bacf79bbc5e4a119b
+git https://github.com/kristoff-it/zig-okredis.git master src/okredis.zig 1a929a467a0f9cbc68c6795096e5a39decce9133
+git https://github.com/Hejsil/zig-clap.git zig-master clap.zig 844c9370bcecf063daff697f296d6ae979190649

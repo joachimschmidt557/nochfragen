@@ -1,6 +1,7 @@
 const std = @import("std");
 const http = @import("apple_pie");
 const okredis = @import("okredis");
+const clap = @import("clap");
 const fs = http.FileServer;
 const router = http.router;
 const Client = okredis.Client;
@@ -39,46 +40,91 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = &gpa.allocator;
 
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    const params = comptime [_]clap.Param(clap.Help){
+        clap.parseParam("-h, --help                     Display this help and exit.") catch unreachable,
+        clap.parseParam("--set-password <PASS>          Set a new password and exit") catch unreachable,
+        clap.parseParam("--listen-address <IP:PORT>     Address to listen for connections") catch unreachable,
+        clap.parseParam("--redis-address <IP:PORT>      Address to connect to redis") catch unreachable,
+        clap.parseParam("--root-dir <PATH>              Path to the static HTML, CSS and JS content") catch unreachable,
+    };
 
-    if (args.len == 1) {
-        startServer(allocator) catch |err| {
+    var diag = clap.Diagnostic{};
+    var args = clap.parse(clap.Help, &params, .{ .diagnostic = &diag }) catch |err| {
+        diag.report(std.io.getStdErr().writer(), err) catch {};
+        std.process.exit(1);
+    };
+    defer args.deinit();
+
+    if (args.flag("--help")) {
+        const stderr = std.io.getStdErr().writer();
+
+        try stderr.writeAll("Usage: nochfragen ");
+        try clap.usage(stderr, &params);
+        try stderr.writeAll("\n\nOptions:\n\n");
+
+        try clap.help(stderr, &params);
+        try stderr.writeAll("\n");
+    } else if (args.option("--set-password")) |pass| {
+        const redis_address = args.option("--redis-address") orelse "127.0.0.1:6379";
+
+        setPassword(allocator, redis_address, pass) catch |err| {
+            log.crit("Error during password setting: {}", .{err});
+            std.process.exit(1);
+        };
+    } else {
+        const listen_address = args.option("--listen-address") orelse "127.0.0.1:8080";
+        const redis_address = args.option("--redis-address") orelse "127.0.0.1:6379";
+        const root_dir = args.option("--root-dir") orelse "public/";
+
+        startServer(allocator, listen_address, redis_address, root_dir) catch |err| {
             log.crit("Error during server execution: {}", .{err});
             std.process.exit(1);
         };
-    } else if (args.len == 3) {
-        if (std.mem.eql(u8, "set-password", args[1])) {
-            setPassword(allocator, args[2]) catch |err| {
-                log.crit("Error during password setting: {}", .{err});
-                std.process.exit(1);
-            };
-        } else {
-            log.crit("Unknown command", .{});
-        }
-    } else {
-        log.crit("Invalid command-line arguments passed", .{});
     }
 }
 
-fn startServer(allocator: *std.mem.Allocator) !void {
+const ParsedAddress = struct { ip: []const u8, port: u16 };
+
+fn parseAddress(address: []const u8) !ParsedAddress {
+    var iter = std.mem.split(u8, address, ":");
+
+    const ip = iter.next() orelse return error.AddressParseError;
+    const port_raw = iter.next() orelse return error.AddressParseError;
+    if (iter.next() != null) return error.AddressParseError;
+    const port = std.fmt.parseInt(u16, port_raw, 10) catch return error.AddressParseError;
+
+    return ParsedAddress{ .ip = ip, .port = port };
+}
+
+fn startServer(
+    allocator: *std.mem.Allocator,
+    listen_address: []const u8,
+    redis_address: []const u8,
+    root_dir: []const u8,
+) !void {
     var context: Context = .{
         .redis_client = undefined,
     };
 
-    const addr = try std.net.Address.parseIp4("127.0.0.1", 6379);
+    const listen_address_parsed = try parseAddress(listen_address);
+    const redis_address_parsed = try parseAddress(redis_address);
+
+    const addr = try std.net.Address.parseIp4(redis_address_parsed.ip, redis_address_parsed.port);
     var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
 
     try context.redis_client.init(connection);
     defer context.redis_client.close();
 
-    try fs.init(allocator, .{ .dir_path = "public/build", .base_path = "build" });
+    try fs.init(allocator, .{
+        .dir_path = try std.fs.path.join(allocator, &.{ root_dir, "build" }),
+        .base_path = "build",
+    });
     defer fs.deinit();
 
     @setEvalBranchQuota(10000);
     try http.listenAndServe(
         allocator,
-        try std.net.Address.parseIp("127.0.0.1", 8080),
+        try std.net.Address.parseIp(listen_address_parsed.ip, listen_address_parsed.port),
         &context,
         comptime router.Router(*Context, &.{
             router.get("/", index),
@@ -96,8 +142,9 @@ fn startServer(allocator: *std.mem.Allocator) !void {
     );
 }
 
-fn setPassword(allocator: *std.mem.Allocator, password: []const u8) !void {
-    const addr = try std.net.Address.parseIp4("127.0.0.1", 6379);
+fn setPassword(allocator: *std.mem.Allocator, redis_address: []const u8, password: []const u8) !void {
+    const redis_address_parsed = try parseAddress(redis_address);
+    const addr = try std.net.Address.parseIp4(redis_address_parsed.ip, redis_address_parsed.port);
     var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
 
     var redis_client: Client = undefined;

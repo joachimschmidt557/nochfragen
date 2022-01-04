@@ -65,7 +65,7 @@ pub fn get(
 
 pub fn save(
     self: Session,
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     request: http.Request,
     response: *http.Response,
 ) !void {

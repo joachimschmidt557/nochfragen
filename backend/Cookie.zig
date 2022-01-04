@@ -42,7 +42,7 @@ pub fn format(
 }
 
 pub fn readCookies(
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     request: http.Request,
     filter: ?[]const u8,
 ) ![]Cookie {

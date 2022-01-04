@@ -38,7 +38,7 @@ const HMGETQuestion = okredis.commands.hashes.HMGET.forStruct(Question);
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = &gpa.allocator;
+    const allocator = gpa.allocator();
 
     const params = comptime [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help                     Display this help and exit.") catch unreachable,
@@ -68,7 +68,7 @@ pub fn main() !void {
         const redis_address = args.option("--redis-address") orelse "127.0.0.1:6379";
 
         setPassword(allocator, redis_address, pass) catch |err| {
-            log.crit("Error during password setting: {}", .{err});
+            log.err("Error during password setting: {}", .{err});
             std.process.exit(1);
         };
     } else {
@@ -77,7 +77,7 @@ pub fn main() !void {
         const root_dir = args.option("--root-dir") orelse "public/";
 
         startServer(allocator, listen_address, redis_address, root_dir) catch |err| {
-            log.crit("Error during server execution: {}", .{err});
+            log.err("Error during server execution: {}", .{err});
             std.process.exit(1);
         };
     }
@@ -97,7 +97,7 @@ fn parseAddress(address: []const u8) !ParsedAddress {
 }
 
 fn startServer(
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     listen_address: []const u8,
     redis_address: []const u8,
     root_dir: []const u8,
@@ -142,7 +142,7 @@ fn startServer(
     );
 }
 
-fn setPassword(allocator: *std.mem.Allocator, redis_address: []const u8, password: []const u8) !void {
+fn setPassword(allocator: std.mem.Allocator, redis_address: []const u8, password: []const u8) !void {
     const redis_address_parsed = try parseAddress(redis_address);
     const addr = try std.net.Address.parseIp4(redis_address_parsed.ip, redis_address_parsed.port);
     var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
@@ -195,12 +195,12 @@ fn forbidden(response: *http.Response, message: []const u8) !void {
 }
 
 const QuestionIterator = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     redis_client: *Client,
     end: u32,
     id: u32,
 
-    pub fn init(allocator: *std.mem.Allocator, redis_client: *Client) !QuestionIterator {
+    pub fn init(allocator: std.mem.Allocator, redis_client: *Client) !QuestionIterator {
         const question_range = try redis_client.send([2]?u32, .{
             "MGET",
             "nochfragen:questions-start",

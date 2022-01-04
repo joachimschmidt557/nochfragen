@@ -1,10 +1,10 @@
 pkgs:
   nochfragen:
     version: 0.0.0
-    root: src/main.zig
     description: Small web app for asking and moderating questions
     license: AGPL-3.0
     source_url: "https://github.com/joachimschmidt557/nochfragen"
+    root: src/main.zig
 deps:
   apple_pie:
     git:

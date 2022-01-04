@@ -13,7 +13,7 @@ options: Options = .{},
 
 pub fn get(
     self: *Store,
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     request: http.Request,
     name: []const u8,
 ) !Session {

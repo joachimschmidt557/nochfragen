@@ -48,33 +48,39 @@ pub fn main() !void {
         clap.parseParam("--root-dir <PATH>              Path to the static HTML, CSS and JS content") catch unreachable,
     };
 
+    const parsers = comptime .{
+        .PASS = clap.parsers.string,
+        .PATH = clap.parsers.string,
+        .@"IP:PORT" = parseAddress,
+    };
+
     var diag = clap.Diagnostic{};
-    var args = clap.parse(clap.Help, &params, .{ .diagnostic = &diag }) catch |err| {
+    var res = clap.parse(clap.Help, &params, parsers, .{ .diagnostic = &diag }) catch |err| {
         diag.report(std.io.getStdErr().writer(), err) catch {};
         std.process.exit(1);
     };
-    defer args.deinit();
+    defer res.deinit();
 
-    if (args.flag("--help")) {
+    if (res.args.help) {
         const stderr = std.io.getStdErr().writer();
 
         try stderr.writeAll("Usage: nochfragen ");
-        try clap.usage(stderr, &params);
+        try clap.usage(stderr, clap.Help, &params);
         try stderr.writeAll("\n\nOptions:\n\n");
 
-        try clap.help(stderr, &params);
+        try clap.help(stderr, clap.Help, &params, .{});
         try stderr.writeAll("\n");
-    } else if (args.option("--set-password")) |pass| {
-        const redis_address = args.option("--redis-address") orelse "127.0.0.1:6379";
+    } else if (res.args.@"set-password") |pass| {
+        const redis_address = res.args.@"redis-address" orelse default_redis_address;
 
         setPassword(allocator, redis_address, pass) catch |err| {
             log.err("Error during password setting: {}", .{err});
             std.process.exit(1);
         };
     } else {
-        const listen_address = args.option("--listen-address") orelse "127.0.0.1:8080";
-        const redis_address = args.option("--redis-address") orelse "127.0.0.1:6379";
-        const root_dir = args.option("--root-dir") orelse "public/";
+        const listen_address = res.args.@"listen-address" orelse default_listen_address;
+        const redis_address = res.args.@"redis-address" orelse default_redis_address;
+        const root_dir = res.args.@"root-dir" orelse "public/";
 
         startServer(allocator, listen_address, redis_address, root_dir) catch |err| {
             log.err("Error during server execution: {}", .{err});
@@ -84,6 +90,8 @@ pub fn main() !void {
 }
 
 const ParsedAddress = struct { ip: []const u8, port: u16 };
+const default_redis_address = ParsedAddress{ .ip = "127.0.0.1", .port = 6379 };
+const default_listen_address = ParsedAddress{ .ip = "127.0.0.1", .port = 8080 };
 
 fn parseAddress(address: []const u8) !ParsedAddress {
     var iter = std.mem.split(u8, address, ":");
@@ -98,8 +106,8 @@ fn parseAddress(address: []const u8) !ParsedAddress {
 
 fn startServer(
     allocator: std.mem.Allocator,
-    listen_address: []const u8,
-    redis_address: []const u8,
+    listen_address: ParsedAddress,
+    redis_address: ParsedAddress,
     root_dir: []const u8,
 ) !void {
     var context: Context = .{
@@ -107,10 +115,7 @@ fn startServer(
     };
     const builder = router.Builder(*Context);
 
-    const listen_address_parsed = try parseAddress(listen_address);
-    const redis_address_parsed = try parseAddress(redis_address);
-
-    const addr = try std.net.Address.parseIp4(redis_address_parsed.ip, redis_address_parsed.port);
+    const addr = try std.net.Address.parseIp4(redis_address.ip, redis_address.port);
     var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
 
     try context.redis_client.init(connection);
@@ -125,7 +130,7 @@ fn startServer(
     @setEvalBranchQuota(10000);
     try http.listenAndServe(
         allocator,
-        try std.net.Address.parseIp(listen_address_parsed.ip, listen_address_parsed.port),
+        try std.net.Address.parseIp(listen_address.ip, listen_address.port),
         &context,
         comptime router.Router(*Context, &.{
             builder.get("/", null, index),
@@ -143,9 +148,8 @@ fn startServer(
     );
 }
 
-fn setPassword(allocator: std.mem.Allocator, redis_address: []const u8, password: []const u8) !void {
-    const redis_address_parsed = try parseAddress(redis_address);
-    const addr = try std.net.Address.parseIp4(redis_address_parsed.ip, redis_address_parsed.port);
+fn setPassword(allocator: std.mem.Allocator, redis_address: ParsedAddress, password: []const u8) !void {
+    const addr = try std.net.Address.parseIp4(redis_address.ip, redis_address.port);
     var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
 
     var redis_client: Client = undefined;

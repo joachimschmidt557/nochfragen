@@ -48,6 +48,8 @@ fn generateNew(self: *Store, name: []const u8) Session {
 
 fn generateRandomId() [64]u8 {
     var buf: [64]u8 = undefined;
-    std.crypto.random.bytes(&buf);
+    // TODO https://github.com/ziglang/zig/issues/7593
+    // std.crypto.random.bytes(&buf);
+    std.os.getrandom(&buf) catch @panic("getrandom() failed to provide entropy");
     return buf;
 }

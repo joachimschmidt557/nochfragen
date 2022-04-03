@@ -10,8 +10,7 @@ const scrypt = std.crypto.pwhash.scrypt;
 
 const Store = @import("Store.zig");
 
-// https://github.com/ziglang/zig/issues/7593
-// pub const io_mode = .evented;
+pub const io_mode = .evented;
 
 const log = std.log.scoped(.nochfragen);
 const max_question_len = 500;

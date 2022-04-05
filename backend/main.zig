@@ -460,7 +460,7 @@ fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http.Req
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
     if (!logged_in) return forbidden(response, "Forbidden");
 
-    try ctx.redis_client.send(void, .{ "COPY", "nochfragen:questions-end", "nochfragen:questions-start" });
+    try ctx.redis_client.send(void, .{ "COPY", "nochfragen:questions-end", "nochfragen:questions-start", "REPLACE" });
 
     try response.writer().print("OK", .{});
 }

@@ -10,7 +10,8 @@ const scrypt = std.crypto.pwhash.scrypt;
 
 const Store = @import("Store.zig");
 
-pub const io_mode = .evented;
+// TODO https://github.com/ziglang/zig/issues/7593
+// pub const io_mode = .evented;
 
 const log = std.log.scoped(.nochfragen);
 const max_question_len = 500;
@@ -29,6 +30,7 @@ const Question = struct {
 
 const Context = struct {
     redis_client: Client,
+    root_dir: []const u8,
 };
 
 const HSETQuestion = okredis.commands.hashes.HSET.forStruct(Question);
@@ -111,6 +113,7 @@ fn startServer(
 ) !void {
     var context: Context = .{
         .redis_client = undefined,
+        .root_dir = try allocator.dupe(u8, root_dir),
     };
     const builder = router.Builder(*Context);
 
@@ -170,7 +173,8 @@ fn index(ctx: *Context, response: *http.Response, request: http.Request, capture
     var store = Store{ .redis_client = &ctx.redis_client };
     const session = try store.get(request.arena, request, "nochfragen_session");
 
-    const file = std.fs.cwd().openFile("public/index.html", .{}) catch |err| switch (err) {
+    const file_path = try std.fs.path.join(request.arena, &.{ ctx.root_dir, "index.html" });
+    const file = std.fs.cwd().openFile(file_path, .{}) catch |err| switch (err) {
         error.FileNotFound => return response.notFound(),
         else => |e| return e,
     };

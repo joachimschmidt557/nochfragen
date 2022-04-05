@@ -28,6 +28,17 @@ const Question = struct {
     visibility: u32 = 0,
 };
 
+const Survey = struct {
+    text: []const u8,
+    options_len: u32,
+    visibility: u32 = 0,
+};
+
+const Option = struct {
+    text: []const u8,
+    votes: u32 = 0,
+};
+
 const Context = struct {
     redis_client: Client,
     root_dir: []const u8,
@@ -35,6 +46,12 @@ const Context = struct {
 
 const HSETQuestion = okredis.commands.hashes.HSET.forStruct(Question);
 const HMGETQuestion = okredis.commands.hashes.HMGET.forStruct(Question);
+
+const HSETSurvey = okredis.commands.hashes.HSET.forStruct(Survey);
+const HMGETSurvey = okredis.commands.hashes.HMGET.forStruct(Survey);
+
+const HSETOption = okredis.commands.hashes.HSET.forStruct(Option);
+const HMGETOption = okredis.commands.hashes.HMGET.forStruct(Option);
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -137,15 +154,22 @@ fn startServer(
         comptime router.Router(*Context, &.{
             builder.get("/", null, index),
             builder.get("/build/*", null, serveFs),
+
             builder.get("/api/login", null, loginStatus),
             builder.post("/api/login", null, login),
             builder.post("/api/logout", null, logout),
+
             builder.get("/api/questions", null, listQuestions),
             builder.post("/api/questions", null, addQuestion),
             builder.delete("/api/questions", null, deleteAllQuestions),
+            builder.put("/api/question/:id", struct { id: u32 }, modifyQuestion),
+
             builder.get("/api/export", null, exportQuestions),
             builder.get("/api/exportall", null, exportAllQuestions),
-            builder.put("/api/question/:id", struct { id: u32 }, modifyQuestion),
+
+            builder.get("/api/surveys", null, listSurveys),
+            builder.post("/api/surveys", null, addSurvey),
+            builder.put("/api/survey/:id", struct { id: u32 }, modifySurvey),
         }),
     );
 }
@@ -255,7 +279,7 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request,
         if (question.visibility != @enumToInt(Visibility.deleted) and
             (logged_in or question.visibility == @enumToInt(Visibility.visible)))
         {
-            const str_id = try std.fmt.allocPrint(allocator, "{}", .{iter.id - 1});
+            const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
             const upvoted = (try session.get(bool, str_id)) orelse false;
 
             try json_write_stream.arrayElem();
@@ -367,7 +391,7 @@ fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request
 
     const key = try std.fmt.allocPrint(allocator, "nochfragen:questions:{}", .{id});
     if (request_data.upvote) {
-        const str_id = try std.fmt.allocPrint(allocator, "{}", .{id});
+        const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{id});
 
         const upvoted = (try session.get(bool, str_id)) orelse false;
         if (upvoted) return forbidden(response, "Already upvoted");
@@ -437,6 +461,203 @@ fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http.Req
     if (!logged_in) return forbidden(response, "Forbidden");
 
     try ctx.redis_client.send(void, .{ "COPY", "nochfragen:questions-end", "nochfragen:questions-start" });
+
+    try response.writer().print("OK", .{});
+}
+
+const SurveyIterator = struct {
+    allocator: std.mem.Allocator,
+    redis_client: *Client,
+    end: u32,
+    id: u32,
+
+    pub fn init(allocator: std.mem.Allocator, redis_client: *Client) !SurveyIterator {
+        const survey_range = try redis_client.send([2]?u32, .{
+            "MGET",
+            "nochfragen:surveys-start",
+            "nochfragen:surveys-end",
+        });
+        const start = survey_range[0] orelse 0;
+        const end = survey_range[1] orelse 0;
+
+        return SurveyIterator{
+            .allocator = allocator,
+            .redis_client = redis_client,
+            .end = end,
+            .id = start,
+        };
+    }
+
+    const IteratorResult = struct {
+        survey: Survey,
+        options: [*]Option,
+    };
+
+    pub fn next(self: *SurveyIterator) !?IteratorResult {
+        if (self.id >= self.end) return null;
+
+        const key = try std.fmt.allocPrint(self.allocator, "nochfragen:surveys:{}", .{self.id});
+        const survey = try self.redis_client.sendAlloc(Survey, self.allocator, HMGETSurvey.init(key));
+
+        const options = try self.allocator.alloc(Option, survey.options_len);
+        for (options) |*option, i| {
+            const option_key = try std.fmt.allocPrint(self.allocator, "nochfragen:surveys:{}:options:{}", .{ self.id, i });
+            option.* = try self.redis_client.sendAlloc(Option, self.allocator, HMGETOption.init(option_key));
+        }
+
+        self.id += 1;
+
+        return IteratorResult{
+            .survey = survey,
+            .options = options.ptr,
+        };
+    }
+};
+
+fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
+    std.debug.assert(captures == null);
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+
+    var iter = try SurveyIterator.init(allocator, &ctx.redis_client);
+
+    var json_write_stream = std.json.writeStream(response.writer(), 6);
+    try json_write_stream.beginArray();
+
+    while (try iter.next()) |result| {
+        const survey = result.survey;
+        const options = result.options[0..survey.options_len];
+
+        if (survey.visibility != @enumToInt(Visibility.deleted) and
+            (logged_in or survey.visibility == @enumToInt(Visibility.visible)))
+        {
+            const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
+            const voted = (try session.get(bool, str_id)) orelse false;
+
+            try json_write_stream.arrayElem();
+            try json_write_stream.beginObject();
+
+            try json_write_stream.objectField("id");
+            try json_write_stream.emitNumber(iter.id - 1);
+
+            try json_write_stream.objectField("text");
+            try json_write_stream.emitString(survey.text);
+
+            try json_write_stream.objectField("visibility");
+            try json_write_stream.emitNumber(survey.visibility);
+
+            try json_write_stream.objectField("voted");
+            try json_write_stream.emitBool(voted);
+
+            try json_write_stream.objectField("options");
+            try json_write_stream.beginArray();
+            for (options) |option| {
+                try json_write_stream.arrayElem();
+                try json_write_stream.beginObject();
+
+                try json_write_stream.objectField("text");
+                try json_write_stream.emitString(option.text);
+
+                try json_write_stream.objectField("votes");
+                try json_write_stream.emitNumber(option.votes);
+
+                try json_write_stream.endObject();
+            }
+            try json_write_stream.endArray();
+
+            try json_write_stream.endObject();
+        }
+    }
+
+    try json_write_stream.endArray();
+}
+
+fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
+    std.debug.assert(captures == null);
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    if (session.is_new) return forbidden(response, "Access denied");
+
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+    if (!logged_in) return forbidden(response, "Forbidden");
+
+    var token_stream = json.TokenStream.init(request.body());
+    const request_data = json.parse(
+        struct { text: []const u8, options: []const []const u8 },
+        &token_stream,
+        .{ .allocator = allocator },
+    ) catch return badRequest(response, "Invalid JSON");
+
+    if (request_data.text.len == 0) return badRequest(response, "Empty question");
+    if (request_data.text.len > max_question_len) return badRequest(response, "Maximum question length exceeded");
+    if (request_data.options.len == 0) return badRequest(response, "No options provided");
+
+    const new_end = try ctx.redis_client.send(i64, .{ "INCR", "nochfragen:surveys-end" });
+    const id = new_end - 1;
+
+    const survey_key = try std.fmt.allocPrint(allocator, "nochfragen:surveys:{}", .{id});
+    try ctx.redis_client.send(void, HSETSurvey.init(survey_key, .{
+        .text = request_data.text,
+        .options_len = @intCast(u32, request_data.options.len),
+    }));
+
+    for (request_data.options) |option_text, i| {
+        const option_key = try std.fmt.allocPrint(allocator, "nochfragen:surveys:{}:options:{}", .{ id, i });
+        try ctx.redis_client.send(void, HSETOption.init(option_key, .{ .text = option_text }));
+    }
+
+    try response.writer().print("OK", .{});
+}
+
+fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
+    const Args = struct { id: u32 };
+    const args = @ptrCast(*const Args, @alignCast(@alignOf(*const Args), captures));
+    const id = args.id;
+    const allocator = request.arena;
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = try store.get(allocator, request, "nochfragen_session");
+    if (session.is_new) return forbidden(response, "Access denied");
+
+    const iter = try SurveyIterator.init(allocator, &ctx.redis_client);
+    if (id < iter.id or id >= iter.end) return badRequest(response, "Invalid ID");
+
+    var token_stream = json.TokenStream.init(request.body());
+    const request_data = try json.parse(
+        struct {
+            mode: u32,
+            vote: u32,
+            visibility: u32,
+        },
+        &token_stream,
+        .{ .allocator = allocator },
+    );
+
+    switch (request_data.mode) {
+        0 => {
+            const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{id});
+            const voted = (try session.get(bool, str_id)) orelse false;
+            if (voted) return forbidden(response, "Already voted");
+
+            const vote = request_data.vote;
+            const key = try std.fmt.allocPrint(allocator, "nochfragen:surveys:{}:options:{}", .{ id, vote });
+            try ctx.redis_client.send(void, .{ "HINCRBY", key, "votes", 1 });
+            try session.set(bool, str_id, true);
+        },
+        1 => {
+            const logged_in = (try session.get(bool, "authenticated")) orelse false;
+            if (!logged_in) return forbidden(response, "Forbidden");
+
+            const key = try std.fmt.allocPrint(allocator, "nochfragen:surveys:{}", .{id});
+            try ctx.redis_client.send(void, .{ "HSET", key, "visibility", request_data.visibility });
+        },
+        else => return badRequest(response, "Invalid mode"),
+    }
 
     try response.writer().print("OK", .{});
 }

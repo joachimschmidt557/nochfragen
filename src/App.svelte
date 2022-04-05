@@ -4,14 +4,16 @@
 
   import Ask from "./Ask.svelte";
   import List from "./List.svelte";
+  import SurveyList from "./SurveyList.svelte";
+  import CreateSurvey from "./CreateSurvey.svelte";
   import Export from "./Export.svelte";
 
   onMount(() => {
     const interval = setInterval(() => {
-      updateQuestions();
+      updateQuestionsAndSurveys();
     }, 3000);
 
-    updateQuestions();
+    updateQuestionsAndSurveys();
     getLoginStatus();
 
     return () => clearInterval(interval);
@@ -20,27 +22,34 @@
   let updating = true;
   let loggedIn = false;
   let items = [];
+  let surveyItems = [];
   let password = "";
   let passwordModalAlert = "";
   let deleteModalAlert = "";
   let alertSuccess = "";
   let alertDanger = "";
 
-  async function updateQuestions() {
+  async function updateQuestionsAndSurveys() {
     updating = true;
-    await fetch(`api/questions`)
-      .then((response) => {
-        if (!response.ok) {
+    await Promise.all([fetch(`api/questions`), fetch(`api/surveys`)])
+      .then(async ([questions, surveys]) => {
+        if (!questions.ok) {
           throw new Error(
             `Error fetching questions. Server returned ${response.status} ${response.statusText}.`
           );
         }
+        if (!surveys.ok) {
+          throw new Error(
+            `Error fetching surveys. Server returned ${response.status} ${response.statusText}.`
+          );
+        }
 
-        return response.json();
+        return [await questions.json(), await surveys.json()];
       })
-      .then((data) => {
-        data.sort((a, b) => b.upvotes - a.upvotes);
-        items = data;
+      .then(([questions, surveys]) => {
+        questions.sort((a, b) => b.upvotes - a.upvotes);
+        items = questions;
+        surveyItems = surveys;
         updating = false;
       })
       .catch((error) => (alertDanger = error));
@@ -76,7 +85,7 @@
           {}
         );
         loginModal.hide();
-        updateQuestions();
+        updateQuestionsAndSurveys();
       })
       .catch((error) => (passwordModalAlert = error));
   }
@@ -89,7 +98,7 @@
         }
 
         loggedIn = false;
-        updateQuestions();
+        updateQuestionsAndSurveys();
       })
       .catch((error) => (alertDanger = error));
   }
@@ -114,7 +123,7 @@
 
   async function submitSuccess() {
     alertSuccess = "Question submitted successfully";
-    await updateQuestions();
+    await updateQuestionsAndSurveys();
   }
 
   function submitError(event) {
@@ -175,7 +184,7 @@
       <div class="btn-group" role="group" aria-label="Controls">
         <button
           type="button"
-          on:click={updateQuestions}
+          on:click={updateQuestionsAndSurveys}
           class="btn btn-outline-primary"
           disabled={updating}
         >
@@ -201,6 +210,12 @@
         {/if}
       </div>
     </div>
+    <ul class="list-group pb-2">
+      {#if loggedIn}
+        <CreateSurvey />
+      {/if}
+      <SurveyList {surveyItems} {loggedIn} />
+    </ul>
     <ul class="list-group">
       <Ask on:success={submitSuccess} on:error={submitError} />
       <List {items} {loggedIn} />

@@ -34,9 +34,13 @@
 
 <div class="list-group-item">
   <form on:submit|preventDefault={submitQuestion}>
-    <label for="questionText" class="form-label">Create a survey</label>
+    <label for="surveyQuestionText" class="form-label">Create a survey</label>
     <div class="d-flex justify-content-between mb-2">
-      <input bind:value={questionText} class="form-control" id="questionText" />
+      <input
+        bind:value={questionText}
+        class="form-control"
+        id="surveyQuestionText"
+      />
       <button
         type="submit"
         class="btn btn-primary ms-2"

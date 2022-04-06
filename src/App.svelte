@@ -35,12 +35,12 @@
       .then(async ([questions, surveys]) => {
         if (!questions.ok) {
           throw new Error(
-            `Error fetching questions. Server returned ${response.status} ${response.statusText}.`
+            `Error fetching questions. Server returned ${questions.status} ${questions.statusText}.`
           );
         }
         if (!surveys.ok) {
           throw new Error(
-            `Error fetching surveys. Server returned ${response.status} ${response.statusText}.`
+            `Error fetching surveys. Server returned ${surveys.status} ${surveys.statusText}.`
           );
         }
 

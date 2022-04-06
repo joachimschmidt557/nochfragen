@@ -19,7 +19,7 @@ one upvote for a single question.
 ### Backend
 
 ```
-go build
+zig build
 ```
 
 ### Frontend
@@ -32,14 +32,33 @@ npm run build
 ## Usage
 
 ```
-Usage of ./nochfragen:
-  -listen-address string
-    	Address to listen for connections (default "0.0.0.0:8000")
-  -redis-address string
-    	Address to connect to redis (default "localhost:6379")
+Usage: nochfragen [-h] [--set-password <PASS>] [--listen-address <IP:PORT>] [--redis-address <IP:PORT>] [--root-dir <PATH>]
+
+Options:
+
+    -h, --help
+            Display this help and exit.
+
+        --set-password <PASS>
+            Set a new password and exit
+
+        --listen-address <IP:PORT>
+            Address to listen for connections
+
+        --redis-address <IP:PORT>
+            Address to connect to redis
+
+        --root-dir <PATH>
+            Path to the static HTML, CSS and JS content
+
 ```
 
 ## Configuration
 
-- `nochfragen:password` in redis: The password required to access
-  moderation features
+- `nochfragen:password` in redis: The password (scrypt hashed)
+  required to access moderation features
+
+## License
+
+`nochfragen` is licensed under the GNU Affero General Public License
+3.0 only.

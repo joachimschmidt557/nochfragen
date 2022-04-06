@@ -9,14 +9,8 @@
   import Export from "./Export.svelte";
 
   onMount(() => {
-    const interval = setInterval(() => {
-      updateQuestionsAndSurveys();
-    }, 3000);
-
-    updateQuestionsAndSurveys();
+    poll();
     getLoginStatus();
-
-    return () => clearInterval(interval);
   });
 
   let updating = true;
@@ -28,6 +22,11 @@
   let deleteModalAlert = "";
   let alertSuccess = "";
   let alertDanger = "";
+
+  async function poll() {
+    await updateQuestionsAndSurveys();
+    setTimeout(poll, 3000);
+  }
 
   async function updateQuestionsAndSurveys() {
     updating = true;

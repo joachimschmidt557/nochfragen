@@ -4,7 +4,7 @@ const okredis = @import("okredis");
 const clap = @import("clap");
 const fs = http.FileServer;
 const router = http.router;
-const Client = okredis.Client;
+const Client = okredis.BufferedClient;
 const json = std.json;
 const scrypt = std.crypto.pwhash.scrypt;
 

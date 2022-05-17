@@ -8,7 +8,7 @@ const Session = @import("Session.zig");
 const Options = @import("Options.zig");
 const Cookie = @import("Cookie.zig");
 
-redis_client: *okredis.Client,
+redis_client: *okredis.BufferedClient,
 options: Options = .{},
 
 pub fn get(

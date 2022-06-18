@@ -3,45 +3,72 @@ const Cookie = @This();
 const std = @import("std");
 const http = @import("apple_pie");
 
+const Options = @import("Options.zig");
+
 name: []const u8,
 value: []const u8,
 path: ?[]const u8 = null,
 domain: ?[]const u8 = null,
-max_age: u32 = 0,
+max_age: ?u32 = null,
 secure: bool = false,
 http_only: bool = false,
+same_site: Options.SameSiteOption = .lax,
 
-pub fn format(
-    self: Cookie,
-    comptime fmt: []const u8,
-    options: std.fmt.FormatOptions,
-    writer: anytype,
-) !void {
-    _ = fmt;
-    _ = options;
+pub fn writeSetCookie(cookie: Cookie, writer: anytype) !void {
+    try writeCookieName(cookie.name, writer);
+    try writer.writeAll("; HttpOnly");
+    try writeCookieValue(cookie.value, writer);
 
-    // TODO sanitize
-
-    try writer.print("{s}={s}", .{ self.name, self.value });
-
-    if (self.path) |path| {
-        try writer.print("; Path={s}", .{path});
+    if (cookie.path) |path| {
+        try writer.writeAll("; Path=");
+        try writeCookiePath(path, writer);
     }
 
-    if (self.domain) |domain| {
-        try writer.print("; Domain={s}", .{domain});
+    if (cookie.domain) |domain| {
+        try writer.writeAll("; Domain=");
+        try writeCookieDomain(domain, writer);
     }
 
-    if (self.http_only) {
+    if (cookie.max_age) |max_age| {
+        try writer.print("; Max-Age={}", .{max_age});
+    }
+
+    if (cookie.http_only) {
         try writer.writeAll("; HttpOnly");
     }
 
-    if (self.secure) {
+    if (cookie.secure) {
         try writer.writeAll("; Secure");
+    }
+
+    switch (cookie.same_site) {
+        .none => try writer.writeAll("; SameSite=None"),
+        .lax => try writer.writeAll("; SameSite=Lax"),
+        .strict => try writer.writeAll("; SameSite=Strict"),
     }
 }
 
-pub fn readCookies(
+fn writeCookieName(name: []const u8, writer: anytype) !void {
+    // TODO sanitize
+    try writer.writeAll(name);
+}
+
+fn writeCookieValue(value: []const u8, writer: anytype) !void {
+    // TODO sanitize
+    try writer.writeAll(value);
+}
+
+fn writeCookiePath(path: []const u8, writer: anytype) !void {
+    // TODO sanitize
+    try writer.writeAll(path);
+}
+
+fn writeCookieDomain(domain: []const u8, writer: anytype) !void {
+    // TODO sanitize
+    try writer.writeAll(domain);
+}
+
+pub fn readRequestCookies(
     allocator: std.mem.Allocator,
     request: http.Request,
     filter: ?[]const u8,
@@ -68,4 +95,55 @@ pub fn readCookies(
     }
 
     return cookies.toOwnedSlice();
+}
+
+// CHAR           = <any US-ASCII character (octets 0 - 127)>
+fn isChar(c: u8) bool {
+    return switch (c) {
+        0...127 => true,
+        else => false,
+    };
+}
+
+// CTL            = <any US-ASCII control character
+//                  (octets 0 - 31) and DEL (127)>
+fn isCtl(c: u8) bool {
+    return switch (c) {
+        0...31 => true,
+        127 => true,
+        else => false,
+    };
+}
+
+// separators     = "(" | ")" | "<" | ">" | "@"
+//                | "," | ";" | ":" | "\" | <">
+//                | "/" | "[" | "]" | "?" | "="
+//                | "{" | "}" | SP | HT
+fn isSeparator(c: u8) bool {
+    return switch (c) {
+        '(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '{', '}', '\t' => true,
+        else => false,
+    };
+}
+
+// token          = 1*<any CHAR except CTLs or separators>
+fn isToken(s: []const u8) bool {
+    if (s.len < 1) return false;
+    for (s) |c| {
+        const is_char = isChar(c);
+        const is_ctl = isCtl(c);
+        const is_separator = isSeparator(c);
+        if (!(is_char and !(is_ctl or is_separator))) return false;
+    }
+    return true;
+}
+
+// path-value        = <any CHAR except CTLs or ";">
+fn isPathValue(s: []const u8) bool {
+    for (s) |c| {
+        const is_char = isChar(c);
+        const is_ctl = isCtl(c);
+        if (!(is_char and !(is_ctl or c == ';'))) return false;
+    }
+    return true;
 }

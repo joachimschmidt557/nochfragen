@@ -348,11 +348,11 @@ fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request, c
     const allocator = request.arena;
 
     var token_stream = json.TokenStream.init(request.body());
-    const request_data = try json.parse(
+    const request_data = json.parse(
         struct { text: []const u8 },
         &token_stream,
         .{ .allocator = allocator },
-    );
+    ) catch return badRequest(response, "Invalid JSON");
 
     if (request_data.text.len == 0) return badRequest(response, "Empty question");
     if (request_data.text.len > max_question_len) return badRequest(response, "Maximum question length exceeded");
@@ -380,14 +380,14 @@ fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request
     if (id < iter.id or id >= iter.end) return badRequest(response, "Invalid ID");
 
     var token_stream = json.TokenStream.init(request.body());
-    const request_data = try json.parse(
+    const request_data = json.parse(
         struct {
             upvote: bool,
             visibility: u32,
         },
         &token_stream,
         .{ .allocator = allocator },
-    );
+    ) catch return badRequest(response, "Invalid JSON");
 
     const key = try std.fmt.allocPrint(allocator, "nochfragen:questions:{}", .{id});
     if (request_data.upvote) {
@@ -424,11 +424,11 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request, capture
     const allocator = request.arena;
 
     var token_stream = json.TokenStream.init(request.body());
-    const request_data = try json.parse(
+    const request_data = json.parse(
         struct { password: []const u8 },
         &token_stream,
         .{ .allocator = allocator },
-    );
+    ) catch return badRequest(response, "Invalid JSON");
 
     const hashed_password = try ctx.redis_client.sendAlloc([]const u8, allocator, .{ "GET", "nochfragen:password" });
     scrypt.strVerify(hashed_password, request_data.password, .{ .allocator = allocator }) catch return forbidden(response, "Access denied");
@@ -628,7 +628,7 @@ fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, 
     if (id < iter.id or id >= iter.end) return badRequest(response, "Invalid ID");
 
     var token_stream = json.TokenStream.init(request.body());
-    const request_data = try json.parse(
+    const request_data = json.parse(
         struct {
             mode: u32,
             vote: u32,
@@ -636,7 +636,7 @@ fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, 
         },
         &token_stream,
         .{ .allocator = allocator },
-    );
+    ) catch return badRequest(response, "Invalid JSON");
 
     switch (request_data.mode) {
         0 => {

@@ -10,13 +10,23 @@ value: []const u8,
 path: ?[]const u8 = null,
 domain: ?[]const u8 = null,
 max_age: ?u32 = null,
+/// Only send cookies over HTTPS
 secure: bool = false,
+/// If true, don't make this cookie available to the Document.cookie
+/// JavaScript API
 http_only: bool = false,
-same_site: Options.SameSiteOption = .lax,
+/// SameSite option
+same_site: SameSiteOption = .lax,
+
+pub const SameSiteOption = enum {
+    none,
+    lax,
+    strict,
+};
 
 pub fn writeSetCookie(cookie: Cookie, writer: anytype) !void {
     try writeCookieName(cookie.name, writer);
-    try writer.writeAll("; HttpOnly");
+    try writer.writeAll("=");
     try writeCookieValue(cookie.value, writer);
 
     if (cookie.path) |path| {

@@ -19,7 +19,7 @@ pub fn get(
 ) !Session {
     const Decoder = std.base64.url_safe_no_pad.Decoder;
 
-    const cookies = try Cookie.readCookies(allocator, request, name);
+    const cookies = try Cookie.readRequestCookies(allocator, request, name);
 
     if (cookies.len > 0) {
         var buf: [64]u8 = undefined;

@@ -152,24 +152,24 @@ fn startServer(
         try std.net.Address.parseIp(listen_address.ip, listen_address.port),
         &context,
         comptime router.Router(*Context, &.{
-            builder.get("/", null, index),
-            builder.get("/build/*", null, serveFs),
+            builder.get("/", index),
+            builder.get("/build/*", serveFs),
 
-            builder.get("/api/login", null, loginStatus),
-            builder.post("/api/login", null, login),
-            builder.post("/api/logout", null, logout),
+            builder.get("/api/login", loginStatus),
+            builder.post("/api/login", login),
+            builder.post("/api/logout", logout),
 
-            builder.get("/api/questions", null, listQuestions),
-            builder.post("/api/questions", null, addQuestion),
-            builder.delete("/api/questions", null, deleteAllQuestions),
-            builder.put("/api/question/:id", struct { id: u32 }, modifyQuestion),
+            builder.get("/api/questions", listQuestions),
+            builder.post("/api/questions", addQuestion),
+            builder.delete("/api/questions", deleteAllQuestions),
+            builder.put("/api/question/:id", modifyQuestion),
 
-            builder.get("/api/export", null, exportQuestions),
-            builder.get("/api/exportall", null, exportAllQuestions),
+            builder.get("/api/export", exportQuestions),
+            builder.get("/api/exportall", exportAllQuestions),
 
-            builder.get("/api/surveys", null, listSurveys),
-            builder.post("/api/surveys", null, addSurvey),
-            builder.put("/api/survey/:id", struct { id: u32 }, modifySurvey),
+            builder.get("/api/surveys", listSurveys),
+            builder.post("/api/surveys", addSurvey),
+            builder.put("/api/survey/:id", modifySurvey),
         }),
     );
 }
@@ -192,8 +192,7 @@ fn setPassword(allocator: std.mem.Allocator, redis_address: ParsedAddress, passw
     try redis_client.send(void, .{ "SET", "nochfragen:password", hashed_password });
 }
 
-fn index(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {
     var store = Store{ .redis_client = &ctx.redis_client };
     const session = try store.get(request.arena, request, "nochfragen_session");
 
@@ -213,8 +212,7 @@ fn index(ctx: *Context, response: *http.Response, request: http.Request, capture
 }
 
 /// Serves static content
-fn serveFs(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn serveFs(ctx: *Context, response: *http.Response, request: http.Request) !void {
     _ = ctx;
     try fs.serve({}, response, request);
 }
@@ -262,8 +260,7 @@ const QuestionIterator = struct {
     }
 };
 
-fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -307,13 +304,11 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request,
     try json_write_stream.endArray();
 }
 
-fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
     try exportQuestionsHidden(ctx, response, request, false);
 }
 
-fn exportAllQuestions(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn exportAllQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
     try exportQuestionsHidden(ctx, response, request, true);
 }
 
@@ -343,8 +338,7 @@ fn exportQuestionsHidden(
     }
 }
 
-fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var token_stream = json.TokenStream.init(request.body());
@@ -366,11 +360,10 @@ fn addQuestion(ctx: *Context, response: *http.Response, request: http.Request, c
     try response.writer().print("OK", .{});
 }
 
-fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    const Args = struct { id: u32 };
-    const args = @ptrCast(*const Args, @alignCast(@alignOf(*const Args), captures));
-    const id = args.id;
+fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request, raw_id: []const u8) !void {
     const allocator = request.arena;
+
+    const id = std.fmt.parseInt(u32, raw_id, 10) catch return badRequest(response, "Invalid ID");
 
     var store = Store{ .redis_client = &ctx.redis_client };
     var session = try store.get(allocator, request, "nochfragen_session");
@@ -408,8 +401,7 @@ fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request
     try response.writer().print("OK", .{});
 }
 
-fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -419,8 +411,7 @@ fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request, c
     try std.json.stringify(.{ .loggedIn = logged_in }, .{}, response.writer());
 }
 
-fn login(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var token_stream = json.TokenStream.init(request.body());
@@ -440,8 +431,7 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request, capture
     try response.writer().print("OK", .{});
 }
 
-fn logout(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn logout(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -451,8 +441,7 @@ fn logout(ctx: *Context, response: *http.Response, request: http.Request, captur
     try response.writer().print("OK", .{});
 }
 
-fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -514,8 +503,7 @@ const SurveyIterator = struct {
     }
 };
 
-fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -575,8 +563,7 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request, c
     try json_write_stream.endArray();
 }
 
-fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    std.debug.assert(captures == null);
+fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -614,11 +601,10 @@ fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request, cap
     try response.writer().print("OK", .{});
 }
 
-fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, captures: ?*const anyopaque) !void {
-    const Args = struct { id: u32 };
-    const args = @ptrCast(*const Args, @alignCast(@alignOf(*const Args), captures));
-    const id = args.id;
+fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, raw_id: []const u8) !void {
     const allocator = request.arena;
+
+    const id = std.fmt.parseInt(u32, raw_id, 10) catch return badRequest(response, "Invalid ID");
 
     var store = Store{ .redis_client = &ctx.redis_client };
     var session = try store.get(allocator, request, "nochfragen_session");

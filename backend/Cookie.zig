@@ -24,6 +24,22 @@ pub const SameSiteOption = enum {
     strict,
 };
 
+pub fn fmtCookie(cookie: Cookie) std.fmt.Formatter(fmtCookieImpl) {
+    return .{ .data = cookie };
+}
+
+pub fn fmtCookieImpl(
+    cookie: Cookie,
+    comptime fmt: []const u8,
+    options: std.fmt.FormatOptions,
+    writer: anytype,
+) !void {
+    _ = fmt;
+    _ = options;
+
+    try writeSetCookie(cookie, writer);
+}
+
 pub fn writeSetCookie(cookie: Cookie, writer: anytype) !void {
     try writeCookieName(cookie.name, writer);
     try writer.writeAll("=");

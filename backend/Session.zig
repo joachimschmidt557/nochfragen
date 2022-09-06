@@ -81,6 +81,6 @@ pub fn save(
         .http_only = self.store.options.http_only,
     };
 
-    const value = try std.fmt.allocPrint(allocator, "{}", .{cookie});
+    const value = try std.fmt.allocPrint(allocator, "{}", .{Cookie.fmtCookie(cookie)});
     try response.headers.put("Set-Cookie", value);
 }

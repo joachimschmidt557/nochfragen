@@ -18,8 +18,11 @@ one upvote for a single question.
 
 ### Backend
 
+The backend requires zig 0.10.1 and a recent version of gyro (git rev
+`19cf64d` was confirmed to work).
+
 ```
-zig build
+gyro build
 ```
 
 ### Frontend

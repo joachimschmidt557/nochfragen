@@ -15,6 +15,7 @@ pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable("nochfragen", "backend/main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
+    exe.use_stage1 = true;
     pkgs.addAllTo(exe);
     exe.install();
 

@@ -165,7 +165,6 @@ fn startServer(
             builder.put("/api/question/:id", modifyQuestion),
 
             builder.get("/api/export", exportQuestions),
-            builder.get("/api/exportall", exportAllQuestions),
 
             builder.get("/api/surveys", listSurveys),
             builder.post("/api/surveys", addSurvey),
@@ -305,19 +304,6 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
 }
 
 fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    try exportQuestionsHidden(ctx, response, request, false);
-}
-
-fn exportAllQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
-    try exportQuestionsHidden(ctx, response, request, true);
-}
-
-fn exportQuestionsHidden(
-    ctx: *Context,
-    response: *http.Response,
-    request: http.Request,
-    include_hidden: bool,
-) !void {
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
@@ -327,14 +313,18 @@ fn exportQuestionsHidden(
 
     var iter = try QuestionIterator.init(allocator, &ctx.redis_client);
 
-    try response.headers.put("Content-Disposition", "attachment; filename=\"questions.txt\"");
+    try response.headers.put("Content-Disposition", "attachment; filename=\"questions.csv\"");
+
+    try response.writer().print("text,upvotes,state\n", .{});
 
     while (try iter.next()) |question| {
-        if (question.state != @enumToInt(State.deleted) and
-            (include_hidden or question.state == @enumToInt(State.visible)))
-        {
-            try response.writer().print("{s}\n", .{question.text});
-        }
+        if (@intToEnum(State, question.state) == .deleted) continue;
+
+        try response.writer().print("{s},{},{}\n", .{
+            question.text,
+            question.upvotes,
+            @intToEnum(State, question.state),
+        });
     }
 }
 

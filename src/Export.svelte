@@ -23,18 +23,7 @@
         />
       </div>
       <div class="modal-body">
-        <p>You can export all questions as a plain text file.</p>
-        <div class="form-check form-switch">
-          <input
-            bind:checked={includeHidden}
-            class="form-check-input"
-            type="checkbox"
-            id="includeHidden"
-          />
-          <label class="form-check-label" for="includeHidden"
-            >Include hidden questions</label
-          >
-        </div>
+        <p>You can export all questions as a CSV file.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
@@ -44,7 +33,7 @@
           type="button"
           class="btn btn-primary"
           role="button"
-          href={includeHidden ? "api/exportall" : "api/export"}>Export</a
+          href="api/export">Export</a
         >
       </div>
     </div>

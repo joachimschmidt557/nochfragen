@@ -16,7 +16,7 @@ const Store = @import("Store.zig");
 const log = std.log.scoped(.nochfragen);
 const max_question_len = 500;
 
-const Visibility = enum(u32) {
+const State = enum(u32) {
     hidden,
     visible,
     deleted,
@@ -25,13 +25,13 @@ const Visibility = enum(u32) {
 const Question = struct {
     text: []const u8,
     upvotes: u32 = 0,
-    visibility: u32 = 0,
+    state: u32 = 1,
 };
 
 const Survey = struct {
     text: []const u8,
     options_len: u32,
-    visibility: u32 = 0,
+    state: u32 = 0,
 };
 
 const Option = struct {
@@ -273,8 +273,8 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
     try json_write_stream.beginArray();
 
     while (try iter.next()) |question| {
-        if (question.visibility != @enumToInt(Visibility.deleted) and
-            (logged_in or question.visibility == @enumToInt(Visibility.visible)))
+        if (question.state != @enumToInt(State.deleted) and
+            (logged_in or question.state == @enumToInt(State.visible)))
         {
             const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
             const upvoted = (try session.get(bool, str_id)) orelse false;
@@ -291,8 +291,8 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
             try json_write_stream.objectField("upvotes");
             try json_write_stream.emitNumber(question.upvotes);
 
-            try json_write_stream.objectField("visibility");
-            try json_write_stream.emitNumber(question.visibility);
+            try json_write_stream.objectField("state");
+            try json_write_stream.emitNumber(question.state);
 
             try json_write_stream.objectField("upvoted");
             try json_write_stream.emitBool(upvoted);
@@ -330,8 +330,8 @@ fn exportQuestionsHidden(
     try response.headers.put("Content-Disposition", "attachment; filename=\"questions.txt\"");
 
     while (try iter.next()) |question| {
-        if (question.visibility != @enumToInt(Visibility.deleted) and
-            (include_hidden or question.visibility == @enumToInt(Visibility.visible)))
+        if (question.state != @enumToInt(State.deleted) and
+            (include_hidden or question.state == @enumToInt(State.visible)))
         {
             try response.writer().print("{s}\n", .{question.text});
         }
@@ -376,7 +376,7 @@ fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request
     const request_data = json.parse(
         struct {
             upvote: bool,
-            visibility: u32,
+            state: u32,
         },
         &token_stream,
         .{ .allocator = allocator },
@@ -395,7 +395,7 @@ fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request
         const logged_in = (try session.get(bool, "authenticated")) orelse false;
         if (!logged_in) return forbidden(response, "Forbidden");
 
-        try ctx.redis_client.send(void, .{ "HSET", key, "visibility", request_data.visibility });
+        try ctx.redis_client.send(void, .{ "HSET", key, "state", request_data.state });
     }
 
     try response.writer().print("OK", .{});
@@ -519,8 +519,8 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
         const survey = result.survey;
         const options = result.options[0..survey.options_len];
 
-        if (survey.visibility != @enumToInt(Visibility.deleted) and
-            (logged_in or survey.visibility == @enumToInt(Visibility.visible)))
+        if (survey.state != @enumToInt(State.deleted) and
+            (logged_in or survey.state == @enumToInt(State.visible)))
         {
             const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
             const voted = (try session.get(bool, str_id)) orelse false;
@@ -534,8 +534,8 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
             try json_write_stream.objectField("text");
             try json_write_stream.emitString(survey.text);
 
-            try json_write_stream.objectField("visibility");
-            try json_write_stream.emitNumber(survey.visibility);
+            try json_write_stream.objectField("state");
+            try json_write_stream.emitNumber(survey.state);
 
             try json_write_stream.objectField("voted");
             try json_write_stream.emitBool(voted);
@@ -618,7 +618,7 @@ fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, 
         struct {
             mode: u32,
             vote: u32,
-            visibility: u32,
+            state: u32,
         },
         &token_stream,
         .{ .allocator = allocator },
@@ -640,7 +640,7 @@ fn modifySurvey(ctx: *Context, response: *http.Response, request: http.Request, 
             if (!logged_in) return forbidden(response, "Forbidden");
 
             const key = try std.fmt.allocPrint(allocator, "nochfragen:surveys:{}", .{id});
-            try ctx.redis_client.send(void, .{ "HSET", key, "visibility", request_data.visibility });
+            try ctx.redis_client.send(void, .{ "HSET", key, "state", request_data.state });
         },
         else => return badRequest(response, "Invalid mode"),
     }

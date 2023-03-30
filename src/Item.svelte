@@ -9,7 +9,7 @@
   async function upvote() {
     await fetch(`api/question/${item.id}`, {
       method: "PUT",
-      body: JSON.stringify({ upvote: true, visibility: 0 }),
+      body: JSON.stringify({ upvote: true, state: 0 }),
     }).then(() => {
       item.upvotes += 1;
       item.upvoted = true;
@@ -19,26 +19,26 @@
   async function show() {
     await fetch(`api/question/${item.id}`, {
       method: "PUT",
-      body: JSON.stringify({ upvote: false, visibility: visible }),
-    }).then(() => (item.visibility = visible));
+      body: JSON.stringify({ upvote: false, state: visible }),
+    }).then(() => (item.state = visible));
   }
 
   async function hide() {
     await fetch(`api/question/${item.id}`, {
       method: "PUT",
-      body: JSON.stringify({ upvote: false, visibility: hidden }),
-    }).then(() => (item.visibility = hidden));
+      body: JSON.stringify({ upvote: false, state: hidden }),
+    }).then(() => (item.state = hidden));
   }
 
   async function del() {
     await fetch(`api/question/${item.id}`, {
       method: "PUT",
-      body: JSON.stringify({ upvote: false, visibility: deleted }),
-    }).then(() => (item.visibility = deleted));
+      body: JSON.stringify({ upvote: false, state: deleted }),
+    }).then(() => (item.state = deleted));
   }
 </script>
 
-{#if item.visibility !== deleted}
+{#if item.state !== deleted}
   <li class="list-group-item d-flex justify-content-between">
     {item.text}
     <div class="btn-group" role="group">
@@ -46,7 +46,7 @@
         <button on:click={del} type="button" class="btn btn-danger">
           Delete
         </button>
-        {#if item.visibility === visible}
+        {#if item.state === visible}
           <button on:click={hide} type="button" class="btn btn-primary">
             Hide
           </button>

@@ -5,7 +5,7 @@
   let choice = -1;
 
   const vote = 0;
-  const modifyVisibility = 1;
+  const modifyState = 1;
 
   const hidden = 0;
   const visible = 1;
@@ -14,7 +14,7 @@
   async function submit() {
     await fetch(`api/survey/${item.id}`, {
       method: "PUT",
-      body: JSON.stringify({ mode: vote, vote: choice, visibility: hidden }),
+      body: JSON.stringify({ mode: vote, vote: choice, state: hidden }),
     }).then(() => {
       item.voted = true;
     });
@@ -24,33 +24,33 @@
     await fetch(`api/survey/${item.id}`, {
       method: "PUT",
       body: JSON.stringify({
-        mode: modifyVisibility,
+        mode: modifyState,
         vote: 0,
-        visibility: visible,
+        state: visible,
       }),
-    }).then(() => (item.visibility = visible));
+    }).then(() => (item.state = visible));
   }
 
   async function hide() {
     await fetch(`api/survey/${item.id}`, {
       method: "PUT",
       body: JSON.stringify({
-        mode: modifyVisibility,
+        mode: modifyState,
         vote: 0,
-        visibility: hidden,
+        state: hidden,
       }),
-    }).then(() => (item.visibility = hidden));
+    }).then(() => (item.state = hidden));
   }
 
   async function del() {
     await fetch(`api/survey/${item.id}`, {
       method: "PUT",
       body: JSON.stringify({
-        mode: modifyVisibility,
+        mode: modifyState,
         vote: 0,
-        visibility: deleted,
+        state: deleted,
       }),
-    }).then(() => (item.visibility = deleted));
+    }).then(() => (item.state = deleted));
   }
 
   function calcPercent(votes) {
@@ -60,7 +60,7 @@
   }
 </script>
 
-{#if item.visibility !== deleted}
+{#if item.state !== deleted}
   <li class="list-group-item">
     <div class="d-flex w-100 justify-content-between">
       {item.text}
@@ -69,7 +69,7 @@
           <button on:click={del} type="button" class="btn btn-danger">
             Delete
           </button>
-          {#if item.visibility === visible}
+          {#if item.state === visible}
             <button on:click={hide} type="button" class="btn btn-primary">
               Hide
             </button>

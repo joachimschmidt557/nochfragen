@@ -16,10 +16,18 @@ const Store = @import("Store.zig");
 const log = std.log.scoped(.nochfragen);
 const max_question_len = 500;
 
-const State = enum(u32) {
+const SurveyState = enum(u32) {
     hidden,
-    visible,
+    open,
     deleted,
+};
+
+const QuestionState = enum(u32) {
+    hidden,
+    unanswered,
+    deleted,
+    answering,
+    answered,
 };
 
 const Question = struct {
@@ -272,8 +280,8 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
     try json_write_stream.beginArray();
 
     while (try iter.next()) |question| {
-        if (question.state != @enumToInt(State.deleted) and
-            (logged_in or question.state == @enumToInt(State.visible)))
+        if (question.state != @enumToInt(QuestionState.deleted) and
+            (logged_in or question.state == @enumToInt(QuestionState.unanswered)))
         {
             const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
             const upvoted = (try session.get(bool, str_id)) orelse false;
@@ -318,12 +326,12 @@ fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Reques
     try response.writer().print("text,upvotes,state\n", .{});
 
     while (try iter.next()) |question| {
-        if (@intToEnum(State, question.state) == .deleted) continue;
+        if (@intToEnum(QuestionState, question.state) == .deleted) continue;
 
         try response.writer().print("{s},{},{}\n", .{
             question.text,
             question.upvotes,
-            @intToEnum(State, question.state),
+            @intToEnum(QuestionState, question.state),
         });
     }
 }
@@ -509,8 +517,8 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
         const survey = result.survey;
         const options = result.options[0..survey.options_len];
 
-        if (survey.state != @enumToInt(State.deleted) and
-            (logged_in or survey.state == @enumToInt(State.visible)))
+        if (survey.state != @enumToInt(SurveyState.deleted) and
+            (logged_in or survey.state == @enumToInt(SurveyState.open)))
         {
             const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
             const voted = (try session.get(bool, str_id)) orelse false;

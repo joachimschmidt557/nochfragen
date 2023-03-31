@@ -29,11 +29,8 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
           >Close</button
         >
-        <a
-          type="button"
-          class="btn btn-primary"
-          role="button"
-          href="api/export">Export</a
+        <a type="button" class="btn btn-primary" role="button" href="api/export"
+          >Export</a
         >
       </div>
     </div>

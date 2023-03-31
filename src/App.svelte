@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
 
   import Ask from "./Ask.svelte";
+  import Item from "./Item.svelte";
   import List from "./List.svelte";
   import SurveyList from "./SurveyList.svelte";
   import CreateSurvey from "./CreateSurvey.svelte";
@@ -15,8 +16,12 @@
 
   let updating = true;
   let loggedIn = false;
+
   let items = [];
+  let answeredItems = [];
+  let hiddenItems = [];
   let surveyItems = [];
+
   let password = "";
   let passwordModalAlert = "";
   let deleteModalAlert = "";
@@ -26,6 +31,23 @@
   async function poll() {
     await updateQuestionsAndSurveys();
     setTimeout(poll, 3000);
+  }
+
+  function questionOrder(a, b) {
+    const answering = 3;
+    const answered = 4;
+
+    if (a.state === answering) {
+      return -1;
+    } else if (b.state === answering) {
+      return 1;
+    } else if (a.state === answered) {
+      return 1;
+    } else if (b.state === answered) {
+      return -1;
+    } else {
+      return b.upvotes - a.upvotes;
+    }
   }
 
   async function updateQuestionsAndSurveys() {
@@ -46,8 +68,15 @@
         return [await questions.json(), await surveys.json()];
       })
       .then(([questions, surveys]) => {
-        questions.sort((a, b) => b.upvotes - a.upvotes);
-        items = questions;
+        const hidden = 0;
+        const answered = 4;
+
+        questions.sort(questionOrder);
+        items = questions.filter(
+          (x) => x.state !== answered && x.state !== hidden
+        );
+        answeredItems = questions.filter((x) => x.state === answered);
+        hiddenItems = questions.filter((x) => x.state === hidden);
         surveyItems = surveys;
         updating = false;
       })
@@ -72,7 +101,9 @@
         if (response.status === 403) {
           throw new Error("Wrong password");
         } else if (!response.ok) {
-          throw new Error("Error while logging in");
+          throw new Error(
+            "Error while logging in. Server returned ${response.status} ${response.statusText}"
+          );
         }
 
         loggedIn = true;
@@ -179,17 +210,25 @@
       </div>
     {/if}
 
-    <div class="pb-2">
-      <div class="btn-group" role="group" aria-label="Controls">
-        <button
-          type="button"
-          on:click={updateQuestionsAndSurveys}
-          class="btn btn-outline-primary"
-          disabled={updating}
-        >
-          Refresh
-        </button>
-        {#if loggedIn}
+    <div class="pb-2 d-flex justify-content-between">
+      <button
+        type="button"
+        on:click={updateQuestionsAndSurveys}
+        class="btn btn-outline-primary"
+        disabled={updating}
+      >
+        Refresh
+      </button>
+      {#if loggedIn}
+        <div class="btn-group" role="group" aria-label="Controls">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            data-bs-toggle="modal"
+            data-bs-target="#exportModal"
+          >
+            Export
+          </button>
           <button
             type="button"
             class="btn btn-outline-danger"
@@ -198,16 +237,8 @@
           >
             Delete all questions
           </button>
-          <button
-            type="button"
-            class="btn btn-outline-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#exportModal"
-          >
-            Export
-          </button>
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
     <ul class="list-group pb-2">
       {#if loggedIn}
@@ -219,6 +250,26 @@
       <Ask on:success={submitSuccess} on:error={submitError} />
       <List {items} {loggedIn} />
     </ul>
+    {#if answeredItems.length > 0}
+      <div class="mt-3">
+        Answered questions
+        <ul class="list-group">
+          {#each answeredItems as item (item.id)}
+            <Item {item} {loggedIn} />
+          {/each}
+        </ul>
+      </div>
+    {/if}
+    {#if hiddenItems.length > 0}
+      <div class="mt-3">
+        Hidden questions
+        <ul class="list-group">
+          {#each hiddenItems as item (item.id)}
+            <Item {item} {loggedIn} />
+          {/each}
+        </ul>
+      </div>
+    {/if}
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">

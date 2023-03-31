@@ -3,8 +3,10 @@
   export let loggedIn;
 
   const hidden = 0;
-  const visible = 1;
+  const unanswered = 1;
   const deleted = 2;
+  const answering = 3;
+  const answered = 4;
 
   async function upvote() {
     await fetch(`api/question/${item.id}`, {
@@ -16,53 +18,85 @@
     });
   }
 
-  async function show() {
+  async function changeState(state) {
     await fetch(`api/question/${item.id}`, {
       method: "PUT",
-      body: JSON.stringify({ upvote: false, state: visible }),
-    }).then(() => (item.state = visible));
-  }
-
-  async function hide() {
-    await fetch(`api/question/${item.id}`, {
-      method: "PUT",
-      body: JSON.stringify({ upvote: false, state: hidden }),
-    }).then(() => (item.state = hidden));
-  }
-
-  async function del() {
-    await fetch(`api/question/${item.id}`, {
-      method: "PUT",
-      body: JSON.stringify({ upvote: false, state: deleted }),
-    }).then(() => (item.state = deleted));
+      body: JSON.stringify({ upvote: false, state: state }),
+    }).then(() => (item.state = state));
   }
 </script>
 
 {#if item.state !== deleted}
-  <li class="list-group-item d-flex justify-content-between">
-    {item.text}
-    <div class="btn-group" role="group">
-      {#if loggedIn}
-        <button on:click={del} type="button" class="btn btn-danger">
-          Delete
-        </button>
-        {#if item.state === visible}
-          <button on:click={hide} type="button" class="btn btn-primary">
-            Hide
+  <li
+    class={item.state === answering
+      ? "list-group-item active d-flex justify-content-between"
+      : "list-group-item d-flex justify-content-between"}
+  >
+    {#if item.state === answered}
+      <span class="text-muted">{item.text}</span>
+    {:else}
+      {item.text}
+    {/if}
+    <div>
+      <div class="btn-group" role="group">
+        {#if loggedIn}
+          <button
+            on:click={() => changeState(deleted)}
+            type="button"
+            class="btn btn-danger"
+          >
+            Delete
           </button>
-        {:else}
-          <button on:click={show} type="button" class="btn btn-primary">
-            Show
+          <button
+            on:click={() => changeState(hidden)}
+            type="button"
+            class={item.state == hidden
+              ? "btn btn-secondary active"
+              : "btn btn-secondary"}
+          >
+            Hidden
+          </button>
+          <button
+            on:click={() => changeState(unanswered)}
+            type="button"
+            class={item.state == unanswered
+              ? "btn btn-secondary active"
+              : "btn btn-secondary"}
+          >
+            Unanswered
+          </button>
+          <button
+            on:click={() => changeState(answering)}
+            type="button"
+            class={item.state == answering
+              ? "btn btn-secondary active"
+              : "btn btn-secondary"}
+          >
+            Answering
+          </button>
+          <button
+            on:click={() => changeState(answered)}
+            type="button"
+            class={item.state == answered
+              ? "btn btn-secondary active"
+              : "btn btn-secondary"}
+          >
+            Answered
           </button>
         {/if}
-      {/if}
+      </div>
       <button
         on:click={upvote}
         disabled={item.upvoted}
         type="button"
         class="btn btn-primary"
       >
-        Upvote ({item.upvotes})
+        {#if item.upvoted}
+          Upvoted
+        {:else}
+          Upvote
+        {/if}
+        <span class="badge bg-secondary">{item.upvotes}</span>
       </button>
     </div>
   </li>

@@ -8,7 +8,7 @@ const Client = okredis.BufferedClient;
 const json = std.json;
 const scrypt = std.crypto.pwhash.scrypt;
 
-const Store = @import("Store.zig");
+const Store = @import("sessions/Store.zig");
 
 // TODO https://github.com/ziglang/zig/issues/7593
 // pub const io_mode = .evented;
@@ -297,7 +297,7 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
 
     while (try iter.next()) |question| {
         if (question.state != .deleted and
-                (logged_in or question.state == .unanswered))
+            (logged_in or question.state == .unanswered))
         {
             const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
             const upvoted = (try session.get(bool, str_id)) orelse false;
@@ -507,7 +507,6 @@ const SurveyIterator = struct {
             .state = std.meta.intToEnum(SurveyState, survey_internal.state) catch .deleted,
         };
 
-
         const options = try self.allocator.alloc(Option, survey.options_len);
         for (options) |*option, i| {
             const option_key = try std.fmt.allocPrint(self.allocator, "nochfragen:surveys:{}:options:{}", .{ self.id, i });
@@ -540,7 +539,7 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
         const options = result.options[0..survey.options_len];
 
         if (survey.state != .deleted and
-                (logged_in or survey.state == .open))
+            (logged_in or survey.state == .open))
         {
             const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
             const voted = (try session.get(bool, str_id)) orelse false;

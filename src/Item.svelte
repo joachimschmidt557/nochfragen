@@ -90,6 +90,7 @@
         disabled={item.upvoted}
         type="button"
         class={item.state === answering ? "btn btn-light" : "btn btn-primary"}
+        style="min-width: 8em"
       >
         {#if item.upvoted}
           Upvoted

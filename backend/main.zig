@@ -179,7 +179,8 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
         .{ .allocator = allocator },
     ) catch return badRequest(response, "Invalid JSON");
 
-    const hashed_password = try ctx.redis_client.sendAlloc([]const u8, allocator, .{ "GET", "nochfragen:password" });
+    const maybe_hashed_password = try ctx.redis_client.sendAlloc(?[]const u8, allocator, .{ "GET", "nochfragen:password" });
+    const hashed_password = maybe_hashed_password orelse return forbidden(response, "Access denied");
     scrypt.strVerify(hashed_password, request_data.password, .{ .allocator = allocator }) catch return forbidden(response, "Access denied");
 
     var store = Store{ .redis_client = &ctx.redis_client };

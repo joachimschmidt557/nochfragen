@@ -6,6 +6,7 @@ const json = std.json;
 
 const Store = @import("sessions/Store.zig");
 const Context = @import("Context.zig");
+const printTime = @import("time.zig").printTime;
 
 const responses = @import("responses.zig");
 const forbidden = responses.forbidden;
@@ -19,17 +20,35 @@ const QuestionState = enum(u32) {
     deleted,
     answering,
     answered,
+
+    fn toString(self: QuestionState) []const u8 {
+        return switch (self) {
+            .hidden => "hidden",
+            .unanswered => "unanswered",
+            .deleted => "deleted",
+            .answering => "answering",
+            .answered => "answered",
+        };
+    }
 };
 
 const Question = struct {
     text: []const u8,
     upvotes: u32 = 0,
     state: QuestionState = .unanswered,
+    created_at: i64,
+    modified_at: i64,
+    answering_at: i64,
+    answered_at: i64,
 };
 const QuestionInternal = struct {
     text: []const u8,
     upvotes: u32 = 0,
     state: u32 = @enumToInt(QuestionState.unanswered),
+    created_at: i64,
+    modified_at: i64 = -1,
+    answering_at: i64 = -1,
+    answered_at: i64 = -1,
 };
 
 const HSETQuestion = okredis.commands.hashes.HSET.forStruct(QuestionInternal);
@@ -70,6 +89,10 @@ const QuestionIterator = struct {
             .text = question_internal.text,
             .upvotes = question_internal.upvotes,
             .state = std.meta.intToEnum(QuestionState, question_internal.state) catch .deleted,
+            .created_at = question_internal.created_at,
+            .modified_at = question_internal.modified_at,
+            .answering_at = question_internal.answering_at,
+            .answered_at = question_internal.answered_at,
         };
     }
 };
@@ -127,18 +150,32 @@ pub fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Re
 
     var iter = try QuestionIterator.init(allocator, &ctx.redis_client);
 
-    try response.headers.put("Content-Disposition", "attachment; filename=\"questions.csv\"");
+    try response.headers.put(
+        "Content-Disposition",
+        "attachment; filename=\"questions.csv\"",
+    );
 
-    try response.writer().print("text,upvotes,state\n", .{});
+    try response.writer().print(
+        "text,upvotes,state,created_at,modified_at,answering_at,answered_at\n",
+        .{},
+    );
 
     while (try iter.next()) |question| {
         if (question.state == .deleted) continue;
 
-        try response.writer().print("{s},{},{}\n", .{
-            question.text,
+        try std.json.encodeJsonString(question.text, .{}, response.writer());
+        try response.writer().print(",{},{s},", .{
             question.upvotes,
-            question.state,
+            question.state.toString(),
         });
+        try printTime(question.created_at, response.writer());
+        try response.writer().writeAll(",");
+        try printTime(question.modified_at, response.writer());
+        try response.writer().writeAll(",");
+        try printTime(question.answering_at, response.writer());
+        try response.writer().writeAll(",");
+        try printTime(question.answered_at, response.writer());
+        try response.writer().writeAll("\n");
     }
 }
 
@@ -159,7 +196,10 @@ pub fn addQuestion(ctx: *Context, response: *http.Response, request: http.Reques
     const id = new_end - 1;
 
     const key = try std.fmt.allocPrint(allocator, "nochfragen:questions:{}", .{id});
-    try ctx.redis_client.send(void, HSETQuestion.init(key, .{ .text = request_data.text }));
+    try ctx.redis_client.send(void, HSETQuestion.init(key, .{
+        .text = request_data.text,
+        .created_at = std.time.timestamp(),
+    }));
 
     try response.writer().print("OK", .{});
 }
@@ -199,7 +239,25 @@ pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Req
         const logged_in = (try session.get(bool, "authenticated")) orelse false;
         if (!logged_in) return forbidden(response, "Forbidden");
 
-        try ctx.redis_client.send(void, .{ "HSET", key, "state", request_data.state });
+        const state = std.meta.intToEnum(QuestionState, request_data.state) catch return badRequest(response, "Invalid state");
+        const modified_at = switch (state) {
+            // don't track these separately
+            .hidden => "modified_at",
+            .unanswered => "modified_at",
+            .deleted => "modified_at",
+
+            .answering => "answering_at",
+            .answered => "answered_at",
+        };
+
+        try ctx.redis_client.send(void, .{
+            "HSET",
+            key,
+            "state",
+            request_data.state,
+            modified_at,
+            std.time.timestamp(),
+        });
     }
 
     try response.writer().print("OK", .{});

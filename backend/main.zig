@@ -136,7 +136,7 @@ fn startServer(
 
 fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {
     var store = Store{ .redis_client = &ctx.redis_client };
-    const session = try store.get(request.arena, request, "nochfragen_session");
+    const session = store.get(request.arena, request, "nochfragen_session");
 
     const file_path = try std.fs.path.join(request.arena, &.{ ctx.root_dir, "index.html" });
     const file = std.fs.cwd().openFile(file_path, .{}) catch |err| switch (err) {
@@ -163,7 +163,7 @@ fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request) !
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
 
     try std.json.stringify(.{ .loggedIn = logged_in }, .{}, response.writer());
@@ -184,7 +184,7 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
     scrypt.strVerify(hashed_password, request_data.password, .{ .allocator = allocator }) catch return forbidden(response, "Access denied");
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     try session.set(bool, "authenticated", true);
 
     try response.writer().print("OK", .{});
@@ -194,7 +194,7 @@ fn logout(ctx: *Context, response: *http.Response, request: http.Request) !void 
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     try session.set(bool, "authenticated", false);
 
     try response.writer().print("OK", .{});

@@ -99,7 +99,7 @@ pub fn listSurveys(ctx: *Context, response: *http.Response, request: http.Reques
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
 
     var iter = try SurveyIterator.init(allocator, &ctx.redis_client);
@@ -158,7 +158,7 @@ pub fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request)
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     if (session.is_new) return forbidden(response, "Access denied");
 
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
@@ -203,7 +203,7 @@ pub fn modifySurvey(
     const id = std.fmt.parseInt(u32, raw_id, 10) catch return badRequest(response, "Invalid ID");
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     if (session.is_new) return forbidden(response, "Access denied");
 
     const iter = try SurveyIterator.init(allocator, &ctx.redis_client);

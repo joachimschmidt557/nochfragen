@@ -13,16 +13,22 @@ id: [64]u8,
 is_new: bool,
 name: []const u8,
 
+const Encoder = std.base64.url_safe_no_pad.Encoder;
+const size = Encoder.calcSize(64);
+
+const prefix = Store.redis_key_prefix;
+const session_indicator = Store.session_indicator;
+const expiry = 60 * 60 * 24 * 14; // 14 days
+
+/// Save a key-value pair associated with the session
 pub fn set(
     self: *Session,
     comptime T: type,
     key: []const u8,
     value: T,
 ) !void {
-    const Encoder = std.base64.url_safe_no_pad.Encoder;
-    const size = comptime Encoder.calcSize(64);
+    if (std.mem.eql(u8, key, session_indicator)) return error.InvalidKey;
 
-    const prefix = "nochfragen:sessions:";
     var buf: [prefix.len + size]u8 = (prefix ++ [_]u8{undefined} ** size).*;
     _ = Encoder.encode(buf[prefix.len..], &self.id);
 
@@ -34,15 +40,14 @@ pub fn set(
     try self.store.redis_client.send(void, .{ "HSET", &buf, key, fixed_up_value });
 }
 
+/// Retrieve a key-value pair associated with the session
 pub fn get(
     self: *Session,
     comptime T: type,
     key: []const u8,
 ) !?T {
-    const Encoder = std.base64.url_safe_no_pad.Encoder;
-    const size = comptime Encoder.calcSize(64);
+    if (std.mem.eql(u8, key, session_indicator)) return error.InvalidKey;
 
-    const prefix = "nochfragen:sessions:";
     var buf: [prefix.len + size]u8 = (prefix ++ [_]u8{undefined} ** size).*;
     _ = Encoder.encode(buf[prefix.len..], &self.id);
 
@@ -63,6 +68,7 @@ pub fn get(
     };
 }
 
+/// Save this session both on the client and on the server
 pub fn save(
     self: Session,
     allocator: std.mem.Allocator,
@@ -70,9 +76,15 @@ pub fn save(
     response: *http.Response,
 ) !void {
     _ = request;
-    const Encoder = std.base64.url_safe_no_pad.Encoder;
-    const size = comptime Encoder.calcSize(64);
     var buf: [size]u8 = undefined;
+
+    if (self.is_new) {
+        var key_buf: [prefix.len + size]u8 = (prefix ++ [_]u8{undefined} ** size).*;
+        _ = Encoder.encode(key_buf[prefix.len..], &self.id);
+
+        try self.store.redis_client.send(void, .{ "HSET", &key_buf, session_indicator, 1 });
+        try self.store.redis_client.send(void, .{ "EXPIRE", &key_buf, expiry, "NX" });
+    }
 
     const cookie = Cookie{
         .name = self.name,

@@ -101,7 +101,7 @@ pub fn listQuestions(ctx: *Context, response: *http.Response, request: http.Requ
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
 
     var iter = try QuestionIterator.init(allocator, &ctx.redis_client);
@@ -144,7 +144,7 @@ pub fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Re
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
     if (!logged_in) return forbidden(response, "Forbidden");
 
@@ -210,7 +210,7 @@ pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Req
     const id = std.fmt.parseInt(u32, raw_id, 10) catch return badRequest(response, "Invalid ID");
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     if (session.is_new) return forbidden(response, "Access denied");
 
     const iter = try QuestionIterator.init(allocator, &ctx.redis_client);
@@ -267,7 +267,7 @@ pub fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http
     const allocator = request.arena;
 
     var store = Store{ .redis_client = &ctx.redis_client };
-    var session = try store.get(allocator, request, "nochfragen_session");
+    var session = store.get(allocator, request, "nochfragen_session");
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
     if (!logged_in) return forbidden(response, "Forbidden");
 

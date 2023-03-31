@@ -11,7 +11,7 @@ const scrypt = std.crypto.pwhash.scrypt;
 const Store = @import("sessions/Store.zig");
 
 // TODO https://github.com/ziglang/zig/issues/7593
-// pub const io_mode = .evented;
+pub const io_mode = .evented;
 
 const log = std.log.scoped(.nochfragen);
 const max_question_len = 500;
@@ -78,7 +78,6 @@ pub fn main() !void {
 
     const params = comptime [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help                     Display this help and exit.") catch unreachable,
-        clap.parseParam("--set-password <PASS>          Set a new password and exit") catch unreachable,
         clap.parseParam("--listen-address <IP:PORT>     Address to listen for connections") catch unreachable,
         clap.parseParam("--redis-address <IP:PORT>      Address to connect to redis") catch unreachable,
         clap.parseParam("--root-dir <PATH>              Path to the static HTML, CSS and JS content") catch unreachable,
@@ -106,13 +105,6 @@ pub fn main() !void {
 
         try clap.help(stderr, clap.Help, &params, .{});
         try stderr.writeAll("\n");
-    } else if (res.args.@"set-password") |pass| {
-        const redis_address = res.args.@"redis-address" orelse default_redis_address;
-
-        setPassword(allocator, redis_address, pass) catch |err| {
-            log.err("Error during password setting: {}", .{err});
-            std.process.exit(1);
-        };
     } else {
         const listen_address = res.args.@"listen-address" orelse default_listen_address;
         const redis_address = res.args.@"redis-address" orelse default_redis_address;
@@ -189,24 +181,6 @@ fn startServer(
             builder.put("/api/survey/:id", modifySurvey),
         }),
     );
-}
-
-fn setPassword(allocator: std.mem.Allocator, redis_address: ParsedAddress, password: []const u8) !void {
-    const addr = try std.net.Address.parseIp4(redis_address.ip, redis_address.port);
-    var connection = std.net.tcpConnectToAddress(addr) catch return error.RedisConnectionError;
-
-    var redis_client: Client = undefined;
-    try redis_client.init(connection);
-    defer redis_client.close();
-
-    var buf: [128]u8 = undefined;
-    const hashed_password = try scrypt.strHash(password, .{
-        .allocator = allocator,
-        .params = scrypt.Params.interactive,
-        .encoding = .crypt,
-    }, &buf);
-
-    try redis_client.send(void, .{ "SET", "nochfragen:password", hashed_password });
 }
 
 fn index(ctx: *Context, response: *http.Response, request: http.Request) !void {

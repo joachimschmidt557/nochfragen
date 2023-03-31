@@ -22,11 +22,19 @@
   let hiddenItems = [];
   let surveyItems = [];
 
+  let connected = true;
   let password = "";
   let passwordModalAlert = "";
   let deleteModalAlert = "";
   let alertSuccess = "";
   let alertDanger = "";
+
+  class ServerError extends Error {
+    constructor(message, statusCode) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+  }
 
   async function poll() {
     await updateQuestionsAndSurveys();
@@ -54,15 +62,13 @@
     updating = true;
     await Promise.all([fetch(`api/questions`), fetch(`api/surveys`)])
       .then(async ([questions, surveys]) => {
+        connected = true;
+
         if (!questions.ok) {
-          throw new Error(
-            `Error fetching questions. Server returned ${questions.status} ${questions.statusText}.`
-          );
+          throw new ServerError(`Error fetching questions`, statusCode);
         }
         if (!surveys.ok) {
-          throw new Error(
-            `Error fetching surveys. Server returned ${surveys.status} ${surveys.statusText}.`
-          );
+          throw new ServerError(`Error fetching surveys`, statusCode);
         }
 
         return [await questions.json(), await surveys.json()];
@@ -78,9 +84,19 @@
         answeredItems = questions.filter((x) => x.state === answered);
         hiddenItems = questions.filter((x) => x.state === hidden);
         surveyItems = surveys;
+
         updating = false;
       })
-      .catch((error) => (alertDanger = error));
+      .catch((error) => {
+        if (error instanceof ServerError) {
+          alertDanger = error;
+        } else {
+          // initial fetch failed
+          connected = false;
+        }
+
+        updating = false;
+      });
   }
 
   async function getLoginStatus() {
@@ -152,7 +168,7 @@
   }
 
   async function submitSuccess() {
-    alertSuccess = "Question submitted successfully";
+    alertSuccess = "Question submitted";
     await updateQuestionsAndSurveys();
   }
 
@@ -211,14 +227,19 @@
     {/if}
 
     <div class="pb-2 d-flex justify-content-between">
-      <button
-        type="button"
-        on:click={updateQuestionsAndSurveys}
-        class="btn btn-outline-primary"
-        disabled={updating}
-      >
-        Refresh
-      </button>
+      <div>
+        <button
+          type="button"
+          on:click={updateQuestionsAndSurveys}
+          class="btn btn-outline-primary"
+          disabled={updating}
+        >
+          Refresh
+        </button>
+        {#if !connected}
+          <span class="text-center text-muted fst-italic"> disconnected </span>
+        {/if}
+      </div>
       {#if loggedIn}
         <div class="btn-group" role="group" aria-label="Controls">
           <button
@@ -240,33 +261,33 @@
         </div>
       {/if}
     </div>
+
     <ul class="list-group pb-2">
       {#if loggedIn}
         <CreateSurvey />
       {/if}
       <SurveyList {surveyItems} {loggedIn} />
     </ul>
+
     <ul class="list-group">
       <Ask on:success={submitSuccess} on:error={submitError} />
       <List {items} {loggedIn} />
     </ul>
+
     {#if answeredItems.length > 0}
       <div class="mt-3">
         Answered questions
         <ul class="list-group">
-          {#each answeredItems as item (item.id)}
-            <Item {item} {loggedIn} />
-          {/each}
+          <List items={answeredItems} {loggedIn} />
         </ul>
       </div>
     {/if}
+
     {#if hiddenItems.length > 0}
       <div class="mt-3">
         Hidden questions
         <ul class="list-group">
-          {#each hiddenItems as item (item.id)}
-            <Item {item} {loggedIn} />
-          {/each}
+          <List items={hiddenItems} {loggedIn} />
         </ul>
       </div>
     {/if}

@@ -50,7 +50,7 @@
           <button
             on:click={() => changeState(hidden)}
             type="button"
-            class={item.state == hidden
+            class={item.state === hidden
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
@@ -59,7 +59,7 @@
           <button
             on:click={() => changeState(unanswered)}
             type="button"
-            class={item.state == unanswered
+            class={item.state === unanswered
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
@@ -68,7 +68,7 @@
           <button
             on:click={() => changeState(answering)}
             type="button"
-            class={item.state == answering
+            class={item.state === answering
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
@@ -77,7 +77,7 @@
           <button
             on:click={() => changeState(answered)}
             type="button"
-            class={item.state == answered
+            class={item.state === answered
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
@@ -89,7 +89,7 @@
         on:click={upvote}
         disabled={item.upvoted}
         type="button"
-        class="btn btn-primary"
+        class={item.state === answering ? "btn btn-light" : "btn btn-primary"}
       >
         {#if item.upvoted}
           Upvoted

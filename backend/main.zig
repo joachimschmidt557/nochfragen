@@ -33,13 +33,23 @@ const QuestionState = enum(u32) {
 const Question = struct {
     text: []const u8,
     upvotes: u32 = 0,
-    state: u32 = 1,
+    state: QuestionState = .unanswered,
+};
+const QuestionInternal = struct {
+    text: []const u8,
+    upvotes: u32 = 0,
+    state: u32 = @enumToInt(QuestionState.unanswered),
 };
 
 const Survey = struct {
     text: []const u8,
     options_len: u32,
-    state: u32 = 0,
+    state: SurveyState = .hidden,
+};
+const SurveyInternal = struct {
+    text: []const u8,
+    options_len: u32,
+    state: u32 = @enumToInt(SurveyState.hidden),
 };
 
 const Option = struct {
@@ -52,11 +62,11 @@ const Context = struct {
     root_dir: []const u8,
 };
 
-const HSETQuestion = okredis.commands.hashes.HSET.forStruct(Question);
-const HMGETQuestion = okredis.commands.hashes.HMGET.forStruct(Question);
+const HSETQuestion = okredis.commands.hashes.HSET.forStruct(QuestionInternal);
+const HMGETQuestion = okredis.commands.hashes.HMGET.forStruct(QuestionInternal);
 
-const HSETSurvey = okredis.commands.hashes.HSET.forStruct(Survey);
-const HMGETSurvey = okredis.commands.hashes.HMGET.forStruct(Survey);
+const HSETSurvey = okredis.commands.hashes.HSET.forStruct(SurveyInternal);
+const HMGETSurvey = okredis.commands.hashes.HMGET.forStruct(SurveyInternal);
 
 const HSETOption = okredis.commands.hashes.HSET.forStruct(Option);
 const HMGETOption = okredis.commands.hashes.HMGET.forStruct(Option);
@@ -263,7 +273,13 @@ const QuestionIterator = struct {
         const key = try std.fmt.allocPrint(self.allocator, "nochfragen:questions:{}", .{self.id});
         self.id += 1;
 
-        return try self.redis_client.sendAlloc(Question, self.allocator, HMGETQuestion.init(key));
+        const question_internal = try self.redis_client.sendAlloc(QuestionInternal, self.allocator, HMGETQuestion.init(key));
+
+        return Question{
+            .text = question_internal.text,
+            .upvotes = question_internal.upvotes,
+            .state = std.meta.intToEnum(QuestionState, question_internal.state) catch .deleted,
+        };
     }
 };
 
@@ -280,8 +296,8 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
     try json_write_stream.beginArray();
 
     while (try iter.next()) |question| {
-        if (question.state != @enumToInt(QuestionState.deleted) and
-            (logged_in or question.state == @enumToInt(QuestionState.unanswered)))
+        if (question.state != .deleted and
+                (logged_in or question.state == .unanswered))
         {
             const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
             const upvoted = (try session.get(bool, str_id)) orelse false;
@@ -299,7 +315,7 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
             try json_write_stream.emitNumber(question.upvotes);
 
             try json_write_stream.objectField("state");
-            try json_write_stream.emitNumber(question.state);
+            try json_write_stream.emitNumber(@enumToInt(question.state));
 
             try json_write_stream.objectField("upvoted");
             try json_write_stream.emitBool(upvoted);
@@ -326,12 +342,12 @@ fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Reques
     try response.writer().print("text,upvotes,state\n", .{});
 
     while (try iter.next()) |question| {
-        if (@intToEnum(QuestionState, question.state) == .deleted) continue;
+        if (question.state == .deleted) continue;
 
         try response.writer().print("{s},{},{}\n", .{
             question.text,
             question.upvotes,
-            @intToEnum(QuestionState, question.state),
+            question.state,
         });
     }
 }
@@ -484,7 +500,13 @@ const SurveyIterator = struct {
         if (self.id >= self.end) return null;
 
         const key = try std.fmt.allocPrint(self.allocator, "nochfragen:surveys:{}", .{self.id});
-        const survey = try self.redis_client.sendAlloc(Survey, self.allocator, HMGETSurvey.init(key));
+        const survey_internal = try self.redis_client.sendAlloc(SurveyInternal, self.allocator, HMGETSurvey.init(key));
+        const survey = Survey{
+            .text = survey_internal.text,
+            .options_len = survey_internal.options_len,
+            .state = std.meta.intToEnum(SurveyState, survey_internal.state) catch .deleted,
+        };
+
 
         const options = try self.allocator.alloc(Option, survey.options_len);
         for (options) |*option, i| {
@@ -517,8 +539,8 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
         const survey = result.survey;
         const options = result.options[0..survey.options_len];
 
-        if (survey.state != @enumToInt(SurveyState.deleted) and
-            (logged_in or survey.state == @enumToInt(SurveyState.open)))
+        if (survey.state != .deleted and
+                (logged_in or survey.state == .open))
         {
             const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
             const voted = (try session.get(bool, str_id)) orelse false;
@@ -533,7 +555,7 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
             try json_write_stream.emitString(survey.text);
 
             try json_write_stream.objectField("state");
-            try json_write_stream.emitNumber(survey.state);
+            try json_write_stream.emitNumber(@enumToInt(survey.state));
 
             try json_write_stream.objectField("voted");
             try json_write_stream.emitBool(voted);

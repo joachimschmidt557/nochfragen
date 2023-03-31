@@ -296,32 +296,31 @@ fn listQuestions(ctx: *Context, response: *http.Response, request: http.Request)
     try json_write_stream.beginArray();
 
     while (try iter.next()) |question| {
-        if (question.state != .deleted and
-            (logged_in or question.state == .unanswered))
-        {
-            const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
-            const upvoted = (try session.get(bool, str_id)) orelse false;
+        if (question.state == .deleted) continue;
+        if (!logged_in and question.state == .hidden) continue;
 
-            try json_write_stream.arrayElem();
-            try json_write_stream.beginObject();
+        const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{iter.id - 1});
+        const upvoted = (try session.get(bool, str_id)) orelse false;
 
-            try json_write_stream.objectField("id");
-            try json_write_stream.emitNumber(iter.id - 1);
+        try json_write_stream.arrayElem();
+        try json_write_stream.beginObject();
 
-            try json_write_stream.objectField("text");
-            try json_write_stream.emitString(question.text);
+        try json_write_stream.objectField("id");
+        try json_write_stream.emitNumber(iter.id - 1);
 
-            try json_write_stream.objectField("upvotes");
-            try json_write_stream.emitNumber(question.upvotes);
+        try json_write_stream.objectField("text");
+        try json_write_stream.emitString(question.text);
 
-            try json_write_stream.objectField("state");
-            try json_write_stream.emitNumber(@enumToInt(question.state));
+        try json_write_stream.objectField("upvotes");
+        try json_write_stream.emitNumber(question.upvotes);
 
-            try json_write_stream.objectField("upvoted");
-            try json_write_stream.emitBool(upvoted);
+        try json_write_stream.objectField("state");
+        try json_write_stream.emitNumber(@enumToInt(question.state));
 
-            try json_write_stream.endObject();
-        }
+        try json_write_stream.objectField("upvoted");
+        try json_write_stream.emitBool(upvoted);
+
+        try json_write_stream.endObject();
     }
 
     try json_write_stream.endArray();
@@ -538,45 +537,44 @@ fn listSurveys(ctx: *Context, response: *http.Response, request: http.Request) !
         const survey = result.survey;
         const options = result.options[0..survey.options_len];
 
-        if (survey.state != .deleted and
-            (logged_in or survey.state == .open))
-        {
-            const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
-            const voted = (try session.get(bool, str_id)) orelse false;
+        if (survey.state == .deleted) continue;
+        if (!logged_in and survey.state == .hidden) continue;
 
+        const str_id = try std.fmt.allocPrint(allocator, "survey:{}", .{iter.id - 1});
+        const voted = (try session.get(bool, str_id)) orelse false;
+
+        try json_write_stream.arrayElem();
+        try json_write_stream.beginObject();
+
+        try json_write_stream.objectField("id");
+        try json_write_stream.emitNumber(iter.id - 1);
+
+        try json_write_stream.objectField("text");
+        try json_write_stream.emitString(survey.text);
+
+        try json_write_stream.objectField("state");
+        try json_write_stream.emitNumber(@enumToInt(survey.state));
+
+        try json_write_stream.objectField("voted");
+        try json_write_stream.emitBool(voted);
+
+        try json_write_stream.objectField("options");
+        try json_write_stream.beginArray();
+        for (options) |option| {
             try json_write_stream.arrayElem();
             try json_write_stream.beginObject();
 
-            try json_write_stream.objectField("id");
-            try json_write_stream.emitNumber(iter.id - 1);
-
             try json_write_stream.objectField("text");
-            try json_write_stream.emitString(survey.text);
+            try json_write_stream.emitString(option.text);
 
-            try json_write_stream.objectField("state");
-            try json_write_stream.emitNumber(@enumToInt(survey.state));
-
-            try json_write_stream.objectField("voted");
-            try json_write_stream.emitBool(voted);
-
-            try json_write_stream.objectField("options");
-            try json_write_stream.beginArray();
-            for (options) |option| {
-                try json_write_stream.arrayElem();
-                try json_write_stream.beginObject();
-
-                try json_write_stream.objectField("text");
-                try json_write_stream.emitString(option.text);
-
-                try json_write_stream.objectField("votes");
-                try json_write_stream.emitNumber(option.votes);
-
-                try json_write_stream.endObject();
-            }
-            try json_write_stream.endArray();
+            try json_write_stream.objectField("votes");
+            try json_write_stream.emitNumber(option.votes);
 
             try json_write_stream.endObject();
         }
+        try json_write_stream.endArray();
+
+        try json_write_stream.endObject();
     }
 
     try json_write_stream.endArray();

@@ -83,7 +83,7 @@ pub fn save(
         _ = Encoder.encode(key_buf[prefix.len..], &self.id);
 
         try self.store.redis_client.send(void, .{ "HSET", &key_buf, session_indicator, 1 });
-        try self.store.redis_client.send(void, .{ "EXPIRE", &key_buf, expiry, "NX" });
+        try self.store.redis_client.send(void, .{ "EXPIRE", &key_buf, expiry });
     }
 
     const cookie = Cookie{

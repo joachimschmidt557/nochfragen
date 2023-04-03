@@ -17,15 +17,40 @@ const defaultLocale = 'en'
 
 import en from './locales/en.json';
 import de from './locales/de.json';
-    import { Button } from "bootstrap";
 
 addMessages('en', en);
 addMessages('de', de);
+
+
+let languages = [
+		{id: 0, locale: 'en', text: `English` },
+		{id: 1, locale: 'de', text: `Deutsch` }
+	];
+
+  
+	let selected = 0;
+
+languages.forEach(l => {if (l.locale === getLocaleFromNavigator())
+{
+  selected = l.id
+}})
 
 init({
   fallbackLocale: 'en',
   initialLocale: getLocaleFromNavigator(),
 });
+
+
+
+  function switchLanguage(){
+    let s = languages[selected];
+    init({
+    fallbackLocale: 'en',
+    initialLocale: s.locale
+    });
+  
+  }
+
 
   onMount(() => {
     poll();
@@ -203,36 +228,29 @@ init({
   }
 
 
-  let languages = [
-		{ locale: 'en', text: `English` },
-		{ locale: 'de', text: `Deutsch` }
-	];
-
-  
-	let selected = 'en';
-
-  function switchLanguage(){
-    init({
-    fallbackLocale: 'en',
-    initialLocale: selected.locale
-    });
-  
-  }
 
 </script>
 
 
 <nav class="navbar">
   <div class="container">
-    <span class="navbar-brand mb-0 h1">{$_('app.title')}</span>
-
-    <select bind:value={selected} on:change="{switchLanguage}">
+    <span class="navbar-brand mb-0 h1">{$_('app.title')}
+	</span>
+	<select class="navbar-form-select" bind:value={selected} on:change="{switchLanguage}">
       {#each languages as lang}
-        <option value={lang}>
+        {#if lang.id === 0}
+        <option value="{lang.id}" selected="selected">
           {lang.text}
         </option>
+        {:else}
+        <option value="{lang.id}" selected="">
+          {lang.text}
+        </option>
+        {/if}
       {/each}
     </select>
+
+    
 
     {#if loggedIn}
       <button type="button" on:click={logout} class="btn">{$_('app.moderator.logout')}</button>

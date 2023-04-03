@@ -85,7 +85,7 @@ init({
           throw new ServerError($_('response.error.question.general'), statusCode);
         }
         if (!surveys.ok) {
-          throw new ServerError($_('response.error.survey'), statusCode);
+          throw new ServerError($_('response.error.survey.general'), statusCode);
         }
 
         return [await questions.json(), await surveys.json()];
@@ -135,7 +135,7 @@ init({
           throw new Error($_('response.error.password'));
         } else if (!response.ok) {
           throw new Error(
-            $_("response.error.serverreturn", { values: { status: response.status, statusText: response.statusText } })
+            $_("response.error.login.serverreturn", { values: { status: response.status, statusText: response.statusText } })
           );
         }
 
@@ -204,7 +204,7 @@ init({
 
 <nav class="navbar">
   <div class="container">
-    <span class="navbar-brand mb-0 h1">Questions</span>
+    <span class="navbar-brand mb-0 h1">{$_('app.title')}</span>
     {#if loggedIn}
       <button type="button" on:click={logout} class="btn">{$_('app.moderator.logout')}</button>
     {:else}
@@ -251,7 +251,7 @@ init({
           class="btn btn-outline-primary"
           disabled={updating}
         >
-          Refresh
+        {$_('app.refresh')}
         </button>
         {#if !connected}
           <span class="text-center text-muted fst-italic"> {$_('status.disconnected')} </span>
@@ -355,7 +355,7 @@ init({
           <button
             type="button"
             class="btn btn-secondary"
-            data-bs-dismiss="modal">Close</button
+            data-bs-dismiss="modal">{$_('app.login.exit')}</button
           >
           <button type="submit" class="btn btn-primary">{$_('app.login.action')}</button>
         </div>
@@ -393,8 +393,7 @@ init({
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
-          >Close</button
-        >
+          >{$_('app.deleteallmodal.exit')}</button>
         <button
           type="submit"
           class="btn btn-danger"

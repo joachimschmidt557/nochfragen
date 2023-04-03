@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
+  import { _, t, format } from 'svelte-i18n';
 
   const dispatch = createEventDispatcher();
 
@@ -13,7 +14,7 @@
       .then((response) => {
         if (!response.ok) {
           throw new Error(
-            `Server returned ${response.status} ${response.statusText}.`
+            $_('response.error.ask.serverreturn', { values: { status: response.status, statusText: response.statusText } })
           );
         }
 
@@ -26,17 +27,17 @@
 
 <div class="list-group-item">
   <form on:submit|preventDefault={submitQuestion}>
-    <label for="questionText" class="form-label">Ask a question</label>
+    <label for="questionText" class="form-label">{$_('app.ask.title')}</label>
     <div class="d-flex justify-content-between">
       <input bind:value={questionText} class="form-control" id="questionText" />
       <button
         type="submit"
         class="btn btn-primary ms-2"
-        disabled={questionText === ""}>Ask</button
+        disabled={questionText === ""}>{$_('app.ask.action')}</button
       >
     </div>
     <div id="moderationLabel" class="form-text">
-      Questions are subject to moderation
+      {$_('app.ask.moderationnotice')}
     </div>
   </form>
 </div>

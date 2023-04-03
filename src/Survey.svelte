@@ -1,4 +1,5 @@
 <script>
+  import { _, t, format } from 'svelte-i18n';
   export let item;
   export let loggedIn;
 
@@ -67,15 +68,15 @@
       <div class="btn-group" role="group">
         {#if loggedIn}
           <button on:click={del} type="button" class="btn btn-danger">
-            Delete
+            {$_("app.surveys.delete")}
           </button>
           {#if item.state === visible}
             <button on:click={hide} type="button" class="btn btn-primary">
-              Hide
+              {$_("app.surveys.hide")}
             </button>
           {:else}
             <button on:click={show} type="button" class="btn btn-primary">
-              Show
+              {$_("app.surveys.show")}
             </button>
           {/if}
         {/if}
@@ -109,7 +110,7 @@
       <button
         on:click={submit}
         class="btn btn-primary mt-2"
-        disabled={choice == -1}>Submit</button
+        disabled={choice == -1}>{$_("app.surveys.submit")}</button
       >
     {/if}
   </li>

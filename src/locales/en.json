@@ -3,6 +3,8 @@
         "disconnected": "disconnected"
     },
     "app": {
+        "title": "AnyQuestions?",
+        "refresh": "Refresh",
         "moderator" :{
             "login": "Moderator Login",
             "logout": "Logout",
@@ -11,17 +13,64 @@
         },
         "questions": {
             "answered": "Answered questions",
-            "hidden": "Hidden questions"
+            "hidden": "Hidden questions",
+            "item":{
+                "upvoted": "Upvoted",
+                "upvote": "Upvote",
+                "delete": "Delete",
+                "status":{
+                    "hidden": "Hidden",
+                    "unanswered": "Unanswered",
+                    "answering": "Answering",
+                    "answered": "Answered"
+                }
+            }
         },
+
+        "surveys": {
+            "creation":{
+
+            },
+            "delete": "Delete",
+            "hide": "Hide",
+            "show": "Show",
+            "submit": "Submit"
+        },
+
         "login":{
             "title": "Login",
+            "exit": "Close",
             "passwordtitle": "Password:",
             "action": "Login"
         },
         "deleteallmodal": {
             "title": "Delete all questions",
+            "exit": "Close",
             "warning": "Are you sure you want to delete all questions? This cannot be undone.",
             "action": "Delete all"
+        },
+
+
+
+        "exportmodal": {
+            "title": "Export questions",
+            "description": "You can export all questions as a CSV file.",
+            "exit": "Close",
+            "action": "Export"
+        },
+
+        "ask":{
+            "title": "Ask a Question",
+            "moderationnotice": "Questions are subject to moderation!",
+            "action": "Ask"
+        },
+        "surveycreationmodal":{
+            "title": "Create a Survey",
+            "action": "Create Survey",
+            "remove": "Remove Option",
+            "add": "Add Option",
+            "description": "Surveys are hidden by default."
+
         },
         "opensource": "This app is "
     },
@@ -33,9 +82,18 @@
                 "deleteall": "Error while deleting all questions",
                 "submit": "Error submitting question: {detail}"
             } ,
-            "survey": "Error fetching surveys",
+            "survey":{
+                "general":"Error fetching surveys",
+                "serverreturn": "Server returned {status} {statusText}."
+            } ,
+            "ask":
+            {
+                "serverreturn": "Server returned {status} {statusText}."
+            },
             "password": "Wrong password",
-            "serverreturn": "Error while logging in. Server returned {status} {statusText}",
+            "login":{
+                "serverreturn":"Error while logging in. Server returned {status} {statusText}"
+            } ,
             "logout": "Error while logging out"
         },
         "success":{

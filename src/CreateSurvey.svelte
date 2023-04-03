@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
+  import { _, t, format } from 'svelte-i18n';
 
   const dispatch = createEventDispatcher();
 
@@ -15,7 +16,7 @@
       .then((response) => {
         if (!response.ok) {
           throw new Error(
-            `Server returned ${response.status} ${response.statusText}.`
+            $_('response.error.surveys.serverreturn', { values: { status: response.status, statusText: response.statusText } })
           );
         }
 
@@ -34,7 +35,7 @@
 
 <div class="list-group-item">
   <form on:submit|preventDefault={submitQuestion}>
-    <label for="surveyQuestionText" class="form-label">Create a survey</label>
+    <label for="surveyQuestionText" class="form-label">{$_('app.surveycreationmodal.title')}</label>
     <div class="d-flex justify-content-between mb-2">
       <input
         bind:value={questionText}
@@ -45,7 +46,7 @@
         type="submit"
         class="btn btn-primary ms-2"
         disabled={questionText === "" || options.length == 0}
-        >Create survey</button
+        >{$_('app.surveycreationmodal.action')}</button
       >
     </div>
     {#each options as option, index}
@@ -54,7 +55,7 @@
         <button
           on:click={() => (options = options.filter((_, i) => i != index))}
           class="btn btn-outline-danger"
-          type="button">Remove option</button
+          type="button">{$_('app.surveycreationmodal.remove')}</button
         >
       </div>
     {/each}
@@ -64,11 +65,11 @@
         on:click={addOption}
         class="btn btn-outline-secondary"
         type="button"
-        disabled={newOptionText === ""}>Add option</button
+        disabled={newOptionText === ""}>{$_('app.surveycreationmodal.add')}</button
       >
     </div>
     <div id="createSurveyLabel" class="form-text">
-      Surveys are hidden by default
+      {$_('app.surveycreationmodal.description')}
     </div>
   </form>
 </div>

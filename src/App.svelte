@@ -202,20 +202,38 @@ init({
     alertDanger = "";
   }
 
-  function switchLanguage(locale){
+
+  let languages = [
+		{ locale: 'en', text: `English` },
+		{ locale: 'de', text: `Deutsch` }
+	];
+
+  
+	let selected = 'en';
+
+  function switchLanguage(){
     init({
     fallbackLocale: 'en',
-    initialLocale: locale,
+    initialLocale: selected.locale
     });
+  
   }
 
 </script>
 
-<button type="button" on:click={()=>switchLanguage('en')}>Test</button>
 
 <nav class="navbar">
   <div class="container">
     <span class="navbar-brand mb-0 h1">{$_('app.title')}</span>
+
+    <select bind:value={selected} on:change="{switchLanguage}">
+      {#each languages as lang}
+        <option value={lang}>
+          {lang.text}
+        </option>
+      {/each}
+    </select>
+
     {#if loggedIn}
       <button type="button" on:click={logout} class="btn">{$_('app.moderator.logout')}</button>
     {:else}

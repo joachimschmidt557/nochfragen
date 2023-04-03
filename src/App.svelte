@@ -7,7 +7,26 @@
   import List from "./List.svelte";
   import SurveyList from "./SurveyList.svelte";
   import CreateSurvey from "./CreateSurvey.svelte";
-  import Export from "./Export.svelte";
+  import Export from "./Export.svelte";    
+  import { _ } from 'svelte-i18n';
+
+  
+  // src/lib/i18n/index.ts
+import { init, register,addMessages, getLocaleFromNavigator } from 'svelte-i18n'
+
+const defaultLocale = 'en'
+
+import en from './locales/en.json';
+import de from './locales/de.json';
+
+addMessages('en', en);
+addMessages('de', de);
+
+init({
+  fallbackLocale: 'en',
+  initialLocale: getLocaleFromNavigator(),
+});
+console.log(en);
 
   onMount(() => {
     poll();
@@ -294,7 +313,7 @@
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
-      This software is <a href="https://github.com/joachimschmidt557/nochfragen"
+      {$_('app.opensource')} <a href="https://github.com/joachimschmidt557/nochfragen"
         >open source</a
       >.
     </p>

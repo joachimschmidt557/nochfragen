@@ -11,6 +11,7 @@ const printTime = @import("time.zig").printTime;
 const responses = @import("responses.zig");
 const forbidden = responses.forbidden;
 const badRequest = responses.badRequest;
+const ok = responses.ok;
 
 const max_question_len = 500;
 
@@ -138,6 +139,7 @@ pub fn listQuestions(ctx: *Context, response: *http.Response, request: http.Requ
     }
 
     try json_write_stream.endArray();
+    response.close = true;
 }
 
 pub fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -201,7 +203,7 @@ pub fn addQuestion(ctx: *Context, response: *http.Response, request: http.Reques
         .created_at = std.time.timestamp(),
     }));
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }
 
 pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Request, raw_id: []const u8) !void {
@@ -260,7 +262,7 @@ pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Req
         });
     }
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }
 
 pub fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -273,5 +275,5 @@ pub fn deleteAllQuestions(ctx: *Context, response: *http.Response, request: http
 
     try ctx.redis_client.send(void, .{ "COPY", "nochfragen:questions-end", "nochfragen:questions-start", "REPLACE" });
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }

@@ -13,6 +13,7 @@ const Context = @import("Context.zig");
 const responses = @import("responses.zig");
 const forbidden = responses.forbidden;
 const badRequest = responses.badRequest;
+const ok = responses.ok;
 
 const surveys = @import("surveys.zig");
 const questions = @import("questions.zig");
@@ -167,6 +168,7 @@ fn loginStatus(ctx: *Context, response: *http.Response, request: http.Request) !
     const logged_in = (try session.get(bool, "authenticated")) orelse false;
 
     try std.json.stringify(.{ .loggedIn = logged_in }, .{}, response.writer());
+    response.close = true;
 }
 
 fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -187,7 +189,7 @@ fn login(ctx: *Context, response: *http.Response, request: http.Request) !void {
     var session = store.get(allocator, request, "nochfragen_session");
     try session.set(bool, "authenticated", true);
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }
 
 fn logout(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -197,5 +199,5 @@ fn logout(ctx: *Context, response: *http.Response, request: http.Request) !void 
     var session = store.get(allocator, request, "nochfragen_session");
     try session.set(bool, "authenticated", false);
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }

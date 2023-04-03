@@ -10,6 +10,7 @@ const Context = @import("Context.zig");
 const responses = @import("responses.zig");
 const forbidden = responses.forbidden;
 const badRequest = responses.badRequest;
+const ok = responses.ok;
 
 const max_question_len = 500;
 
@@ -152,6 +153,7 @@ pub fn listSurveys(ctx: *Context, response: *http.Response, request: http.Reques
     }
 
     try json_write_stream.endArray();
+    response.close = true;
 }
 
 pub fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -189,7 +191,7 @@ pub fn addSurvey(ctx: *Context, response: *http.Response, request: http.Request)
         try ctx.redis_client.send(void, HSETOption.init(option_key, .{ .text = option_text }));
     }
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }
 
 pub fn modifySurvey(
@@ -241,5 +243,5 @@ pub fn modifySurvey(
         else => return badRequest(response, "Invalid mode"),
     }
 
-    try response.writer().print("OK", .{});
+    try ok(response);
 }

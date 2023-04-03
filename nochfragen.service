@@ -7,7 +7,7 @@ After=redis.service
 User=nochfragen
 Group=nochfragen
 Type=simple
-ExecStart=/opt/nochfragen -root-dir /var/www/nochfragen -listen-address 127.0.0.1:8000
+ExecStart=/opt/nochfragen --root-dir /var/www/nochfragen --listen-address 127.0.0.1:8000
 Restart=always
 RestartSec=5
 

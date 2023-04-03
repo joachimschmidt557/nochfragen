@@ -2,6 +2,8 @@
 
 A small web app for asking and moderating questions
 
+![nochfragen in action](images/screenshot.png)
+
 ## Introduction
 
 Questions can be submitted by any user. Initially, questions are
@@ -35,15 +37,12 @@ npm run build
 ## Usage
 
 ```
-Usage: nochfragen [-h] [--set-password <PASS>] [--listen-address <IP:PORT>] [--redis-address <IP:PORT>] [--root-dir <PATH>]
+Usage: nochfragen [-h] [--listen-address <IP:PORT>] [--redis-address <IP:PORT>] [--root-dir <PATH>]
 
 Options:
 
     -h, --help
             Display this help and exit.
-
-        --set-password <PASS>
-            Set a new password and exit
 
         --listen-address <IP:PORT>
             Address to listen for connections
@@ -58,8 +57,24 @@ Options:
 
 ## Configuration
 
-- `nochfragen:password` in redis: The password (scrypt hashed)
-  required to access moderation features
+The `nochfragenctl` command-line utility is designed to configure a
+(possibly runnig) nochfragen server.
+
+```
+Usage: nochfragenctl [-h] [--set-password <PASS>] [--redis-address <IP:PORT>]
+
+Options:
+
+    -h, --help
+            Display this help and exit.
+
+        --set-password <PASS>
+            Set a new password and exit
+
+        --redis-address <IP:PORT>
+            Address to connect to redis
+
+```
 
 ## License
 

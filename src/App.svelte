@@ -202,16 +202,16 @@ init({
     alertDanger = "";
   }
 
-  function test(){
+  function switchLanguage(locale){
     init({
     fallbackLocale: 'en',
-    initialLocale: 'en',
+    initialLocale: locale,
     });
   }
 
 </script>
 
-<button type="button" on:click={test}>Test</button>
+<button type="button" on:click={()=>switchLanguage('en')}>Test</button>
 
 <nav class="navbar">
   <div class="container">

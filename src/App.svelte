@@ -1,46 +1,38 @@
 <script>
   import * as bootstrap from "bootstrap";
   import { onMount } from "svelte";
-
   import Ask from "./Ask.svelte";
   import Item from "./Item.svelte";
   import List from "./List.svelte";
   import SurveyList from "./SurveyList.svelte";
   import CreateSurvey from "./CreateSurvey.svelte";
   import Export from "./Export.svelte";    
-  import { _, t, format } from 'svelte-i18n'
-
-  
-import { init, register,addMessages, getLocaleFromNavigator } from 'svelte-i18n'
-
-const defaultLocale = 'en'
-
-import en from './locales/en.json';
-import de from './locales/de.json';
-
-addMessages('en', en);
-addMessages('de', de);
+  import { _ } from 'svelte-i18n'
+  import en from './locales/en.json';
+  import de from './locales/de.json';
+  import { init ,addMessages, getLocaleFromNavigator } from 'svelte-i18n'
+  const defaultLocale = 'en'
 
 
-let languages = [
+  addMessages('en', en);
+  addMessages('de', de);
+
+  let languages = [
 		{id: 0, locale: 'en', text: `English` },
 		{id: 1, locale: 'de', text: `Deutsch` }
 	];
 
-  
-	let selected = 0;
+  let selected = 0;
 
-languages.forEach(l => {if (l.locale === getLocaleFromNavigator())
-{
-  selected = l.id
-}})
+  languages.forEach(l => {if (l.locale === getLocaleFromNavigator())
+  {
+    selected = l.id
+  }})
 
-init({
-  fallbackLocale: 'en',
-  initialLocale: getLocaleFromNavigator(),
-});
-
-
+  init({
+    fallbackLocale: 'en',
+    initialLocale: getLocaleFromNavigator(),
+  });
 
   function switchLanguage(){
     let s = languages[selected];
@@ -50,7 +42,6 @@ init({
     });
   
   }
-
 
   onMount(() => {
     poll();

@@ -15,8 +15,8 @@
           "answered": "Beantwortete Fragen",
           "hidden": "Verdeckte Fragen",
           "item":{
-              "upvoted": "Stimmen",
-              "upvote": "Für diese Frage abstimmen",
+              "upvoted": "Upvoted",
+              "upvote": "Upvote",
               "delete": "Löschen",
               "status":{
                   "hidden": "Verdeckt",

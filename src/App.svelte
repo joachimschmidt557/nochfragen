@@ -17,6 +17,7 @@ const defaultLocale = 'en'
 
 import en from './locales/en.json';
 import de from './locales/de.json';
+    import { Button } from "bootstrap";
 
 addMessages('en', en);
 addMessages('de', de);
@@ -200,7 +201,17 @@ init({
   function dismissAlertDanger() {
     alertDanger = "";
   }
+
+  function test(){
+    init({
+    fallbackLocale: 'en',
+    initialLocale: 'en',
+    });
+  }
+
 </script>
+
+<button type="button" on:click={test}>Test</button>
 
 <nav class="navbar">
   <div class="container">

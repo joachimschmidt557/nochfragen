@@ -1,6 +1,48 @@
 {
+    "status": {
+        "disconnected": "disconnected"
+    },
     "app": {
+        "moderator" :{
+            "login": "Moderator Login",
+            "logout": "Logout",
+            "export": "Export",
+            "deleteall": "Delete all questions"
+        },
+        "questions": {
+            "answered": "Answered questions",
+            "hidden": "Hidden questions"
+        },
+        "login":{
+            "title": "Login",
+            "passwordtitle": "Password:",
+            "action": "Login"
+        },
+        "deleteallmodal": {
+            "title": "Delete all questions",
+            "warning": "Are you sure you want to delete all questions? This cannot be undone.",
+            "action": "Delete all"
+        },
         "opensource": "This app is "
+    },
+    "response":{
+        "error":{
+            "question":
+            {
+                "general": "Error fetching questions",
+                "deleteall": "Error while deleting all questions",
+                "submit": "Error submitting question: {detail}"
+            } ,
+            "survey": "Error fetching surveys",
+            "password": "Wrong password",
+            "serverreturn": "Error while logging in. Server returned {status} {statusText}",
+            "logout": "Error while logging out"
+        },
+        "success":{
+            "question":{
+                "submit": "Question submitted" 
+            }
+        }
     }
 }
   

@@ -8,10 +8,9 @@
   import SurveyList from "./SurveyList.svelte";
   import CreateSurvey from "./CreateSurvey.svelte";
   import Export from "./Export.svelte";    
-  import { _ } from 'svelte-i18n';
+  import { _, t, format } from 'svelte-i18n'
 
   
-  // src/lib/i18n/index.ts
 import { init, register,addMessages, getLocaleFromNavigator } from 'svelte-i18n'
 
 const defaultLocale = 'en'
@@ -26,7 +25,6 @@ init({
   fallbackLocale: 'en',
   initialLocale: getLocaleFromNavigator(),
 });
-console.log(en);
 
   onMount(() => {
     poll();
@@ -84,10 +82,10 @@ console.log(en);
         connected = true;
 
         if (!questions.ok) {
-          throw new ServerError(`Error fetching questions`, statusCode);
+          throw new ServerError($_('response.error.question.general'), statusCode);
         }
         if (!surveys.ok) {
-          throw new ServerError(`Error fetching surveys`, statusCode);
+          throw new ServerError($_('response.error.survey'), statusCode);
         }
 
         return [await questions.json(), await surveys.json()];
@@ -134,10 +132,10 @@ console.log(en);
     })
       .then((response) => {
         if (response.status === 403) {
-          throw new Error("Wrong password");
+          throw new Error($_('response.error.password'));
         } else if (!response.ok) {
           throw new Error(
-            "Error while logging in. Server returned ${response.status} ${response.statusText}"
+            $_("response.error.serverreturn", { values: { status: response.status, statusText: response.statusText } })
           );
         }
 
@@ -159,7 +157,7 @@ console.log(en);
     await fetch(`api/logout`, { method: "POST" })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Error while logging out");
+          throw new Error($_("response.error.passwordlogout"));
         }
 
         loggedIn = false;
@@ -172,7 +170,7 @@ console.log(en);
     await fetch(`api/questions`, { method: "DELETE" })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Error while deleting all questions");
+          throw new Error($_('response.error.question.deleteall'));
         }
 
         items = [];
@@ -187,12 +185,12 @@ console.log(en);
   }
 
   async function submitSuccess() {
-    alertSuccess = "Question submitted";
+    alertSuccess = $_('response.success.question.submit');
     await updateQuestionsAndSurveys();
   }
 
   function submitError(event) {
-    alertDanger = `Error submitting question: ${event.detail}`;
+    alertDanger = $_('response.error.question.submit',  { values: { detail:event.detail}});
   }
 
   function dismissAlertSuccess() {
@@ -208,13 +206,13 @@ console.log(en);
   <div class="container">
     <span class="navbar-brand mb-0 h1">Questions</span>
     {#if loggedIn}
-      <button type="button" on:click={logout} class="btn">Logout</button>
+      <button type="button" on:click={logout} class="btn">{$_('app.moderator.logout')}</button>
     {:else}
       <button
         type="button"
         class="btn"
         data-bs-toggle="modal"
-        data-bs-target="#loginModal">Moderator Login</button
+        data-bs-target="#loginModal">{$_('app.moderator.login')}</button
       >
     {/if}
   </div>
@@ -256,7 +254,7 @@ console.log(en);
           Refresh
         </button>
         {#if !connected}
-          <span class="text-center text-muted fst-italic"> disconnected </span>
+          <span class="text-center text-muted fst-italic"> {$_('status.disconnected')} </span>
         {/if}
       </div>
       {#if loggedIn}
@@ -267,7 +265,7 @@ console.log(en);
             data-bs-toggle="modal"
             data-bs-target="#exportModal"
           >
-            Export
+            {$_('app.moderator.export')}
           </button>
           <button
             type="button"
@@ -275,7 +273,7 @@ console.log(en);
             data-bs-toggle="modal"
             data-bs-target="#deleteModal"
           >
-            Delete all questions
+            {$_('app.moderator.deleteall')}
           </button>
         </div>
       {/if}
@@ -295,7 +293,7 @@ console.log(en);
 
     {#if answeredItems.length > 0}
       <div class="mt-3">
-        Answered questions
+        {$_('app.questions.answered')}
         <ul class="list-group">
           <List items={answeredItems} {loggedIn} />
         </ul>
@@ -304,7 +302,7 @@ console.log(en);
 
     {#if hiddenItems.length > 0}
       <div class="mt-3">
-        Hidden questions
+        {$_('app.questions.hidden')}
         <ul class="list-group">
           <List items={hiddenItems} {loggedIn} />
         </ul>
@@ -330,7 +328,7 @@ console.log(en);
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+        <h5 class="modal-title" id="loginModalLabel">{$_('app.login.title')}</h5>
         <button
           type="button"
           class="btn-close"
@@ -345,7 +343,7 @@ console.log(en);
               {passwordModalAlert}
             </div>
           {/if}
-          <label for="password" class="form-label">Password</label>
+          <label for="password" class="form-label">{$_('app.login.passwordtitle')}</label>
           <input
             bind:value={password}
             type="password"
@@ -359,7 +357,7 @@ console.log(en);
             class="btn btn-secondary"
             data-bs-dismiss="modal">Close</button
           >
-          <button type="submit" class="btn btn-primary">Login</button>
+          <button type="submit" class="btn btn-primary">{$_('app.login.action')}</button>
         </div>
       </form>
     </div>
@@ -375,7 +373,7 @@ console.log(en);
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="deleteModalLabel">Delete all questions</h5>
+        <h5 class="modal-title" id="deleteModalLabel">{$_('app.deleteallmodal.title')}</h5>
         <button
           type="button"
           class="btn-close"
@@ -390,7 +388,7 @@ console.log(en);
           </div>
         {/if}
         <p>
-          Are you sure you want to delete all questions? This cannot be undone.
+          {$_('app.deleteallmodal.warning')}
         </p>
       </div>
       <div class="modal-footer">
@@ -400,7 +398,7 @@ console.log(en);
         <button
           type="submit"
           class="btn btn-danger"
-          on:click={deleteAllQuestions}>Delete</button
+          on:click={deleteAllQuestions}>{$_('app.deleteallmodal.action')}</button
         >
       </div>
     </div>

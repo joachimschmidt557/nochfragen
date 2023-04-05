@@ -1,6 +1,6 @@
 <script>
   import * as bootstrap from "bootstrap";
-  import { _, t, format } from 'svelte-i18n';
+  import { _, t, format } from "svelte-i18n";
 
   let includeHidden = false;
 </script>
@@ -15,7 +15,9 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exportModalLabel">{$_("app.exportmodal.title")}</h5>
+        <h5 class="modal-title" id="exportModalLabel">
+          {$_("app.exportmodal.title")}
+        </h5>
         <button
           type="button"
           class="btn-close"

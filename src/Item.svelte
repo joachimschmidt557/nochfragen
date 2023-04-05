@@ -1,5 +1,5 @@
 <script>
-  import { _, t, format } from 'svelte-i18n';
+  import { _, t, format } from "svelte-i18n";
 
   export let item;
   export let loggedIn;
@@ -47,7 +47,7 @@
             type="button"
             class="btn btn-danger"
           >
-          {$_("app.questions.item.delete")}
+            {$_("app.questions.item.delete")}
           </button>
           <button
             on:click={() => changeState(hidden)}
@@ -74,7 +74,7 @@
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
-          {$_("app.questions.item.status.answering")}
+            {$_("app.questions.item.status.answering")}
           </button>
           <button
             on:click={() => changeState(answered)}
@@ -83,7 +83,7 @@
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
-          {$_("app.questions.item.status.answered")}
+            {$_("app.questions.item.status.answered")}
           </button>
         {/if}
       </div>
@@ -95,9 +95,9 @@
         style="min-width: 8em"
       >
         {#if item.upvoted}
-        {$_("app.questions.item.upvoted")}
+          {$_("app.questions.item.upvoted")}
         {:else}
-        {$_("app.questions.item.upvote")}
+          {$_("app.questions.item.upvote")}
         {/if}
         <span class="badge bg-secondary">{item.upvotes}</span>
       </button>

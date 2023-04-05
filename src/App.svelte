@@ -6,41 +6,40 @@
   import List from "./List.svelte";
   import SurveyList from "./SurveyList.svelte";
   import CreateSurvey from "./CreateSurvey.svelte";
-  import Export from "./Export.svelte";    
-  import { _ } from 'svelte-i18n'
-  import en from './locales/en.json';
-  import de from './locales/de.json';
-  import { init ,addMessages, getLocaleFromNavigator } from 'svelte-i18n'
-  const defaultLocale = 'en'
+  import Export from "./Export.svelte";
+  import { _ } from "svelte-i18n";
+  import en from "./locales/en.json";
+  import de from "./locales/de.json";
+  import { init, addMessages, getLocaleFromNavigator } from "svelte-i18n";
+  const defaultLocale = "en";
 
-
-  addMessages('en', en);
-  addMessages('de', de);
+  addMessages("en", en);
+  addMessages("de", de);
 
   let languages = [
-		{id: 0, locale: 'en', text: `English` },
-		{id: 1, locale: 'de', text: `Deutsch` }
-	];
+    { id: 0, locale: "en", text: `English` },
+    { id: 1, locale: "de", text: `Deutsch` },
+  ];
 
   let selected = 0;
 
-  languages.forEach(l => {if (l.locale === getLocaleFromNavigator())
-  {
-    selected = l.id
-  }})
+  languages.forEach((l) => {
+    if (l.locale === getLocaleFromNavigator()) {
+      selected = l.id;
+    }
+  });
 
   init({
-    fallbackLocale: 'en',
+    fallbackLocale: "en",
     initialLocale: getLocaleFromNavigator(),
   });
 
-  function switchLanguage(){
+  function switchLanguage() {
     let s = languages[selected];
     init({
-    fallbackLocale: 'en',
-    initialLocale: s.locale
+      fallbackLocale: "en",
+      initialLocale: s.locale,
     });
-  
   }
 
   onMount(() => {
@@ -99,10 +98,16 @@
         connected = true;
 
         if (!questions.ok) {
-          throw new ServerError($_('response.error.question.general'), statusCode);
+          throw new ServerError(
+            $_("response.error.question.general"),
+            statusCode
+          );
         }
         if (!surveys.ok) {
-          throw new ServerError($_('response.error.survey.general'), statusCode);
+          throw new ServerError(
+            $_("response.error.survey.general"),
+            statusCode
+          );
         }
 
         return [await questions.json(), await surveys.json()];
@@ -149,10 +154,15 @@
     })
       .then((response) => {
         if (response.status === 403) {
-          throw new Error($_('response.error.password'));
+          throw new Error($_("response.error.password"));
         } else if (!response.ok) {
           throw new Error(
-            $_("response.error.login.serverreturn", { values: { status: response.status, statusText: response.statusText } })
+            $_("response.error.login.serverreturn", {
+              values: {
+                status: response.status,
+                statusText: response.statusText,
+              },
+            })
           );
         }
 
@@ -187,7 +197,7 @@
     await fetch(`api/questions`, { method: "DELETE" })
       .then((response) => {
         if (!response.ok) {
-          throw new Error($_('response.error.question.deleteall'));
+          throw new Error($_("response.error.question.deleteall"));
         }
 
         items = [];
@@ -202,12 +212,14 @@
   }
 
   async function submitSuccess() {
-    alertSuccess = $_('response.success.question.submit');
+    alertSuccess = $_("response.success.question.submit");
     await updateQuestionsAndSurveys();
   }
 
   function submitError(event) {
-    alertDanger = $_('response.error.question.submit',  { values: { detail:event.detail}});
+    alertDanger = $_("response.error.question.submit", {
+      values: { detail: event.detail },
+    });
   }
 
   function dismissAlertSuccess() {
@@ -217,40 +229,40 @@
   function dismissAlertDanger() {
     alertDanger = "";
   }
-
-
-
 </script>
 
 
 <nav class="navbar">
   <div class="container">
-    <span class="navbar-brand mb-0 h1">{$_('app.title')}
-	</span>
-	<select class="navbar-form-select" bind:value={selected} on:change="{switchLanguage}">
+    <span class="navbar-brand mb-0 h1">{$_("app.title")} </span>
+    <select
+      class="navbar-form-select"
+      bind:value={selected}
+      on:change={switchLanguage}
+    >
       {#each languages as lang}
         {#if lang.id === 0}
-        <option value="{lang.id}" selected="selected">
-          {lang.text}
-        </option>
+          <option value={lang.id} selected="selected">
+            {lang.text}
+          </option>
         {:else}
-        <option value="{lang.id}" selected="">
-          {lang.text}
-        </option>
+          <option value={lang.id} selected="">
+            {lang.text}
+          </option>
         {/if}
       {/each}
     </select>
 
-    
-
     {#if loggedIn}
-      <button type="button" on:click={logout} class="btn">{$_('app.moderator.logout')}</button>
+      <button type="button" on:click={logout} class="btn"
+        >{$_("app.moderator.logout")}</button
+      >
     {:else}
       <button
         type="button"
         class="btn"
         data-bs-toggle="modal"
-        data-bs-target="#loginModal">{$_('app.moderator.login')}</button
+        data-bs-target="#loginModal">{$_("app.moderator.login")}</button
       >
     {/if}
   </div>
@@ -289,10 +301,12 @@
           class="btn btn-outline-primary"
           disabled={updating}
         >
-        {$_('app.refresh')}
+          {$_("app.refresh")}
         </button>
         {#if !connected}
-          <span class="text-center text-muted fst-italic"> {$_('status.disconnected')} </span>
+          <span class="text-center text-muted fst-italic">
+            {$_("status.disconnected")}
+          </span>
         {/if}
       </div>
       {#if loggedIn}
@@ -303,7 +317,7 @@
             data-bs-toggle="modal"
             data-bs-target="#exportModal"
           >
-            {$_('app.moderator.export')}
+            {$_("app.moderator.export")}
           </button>
           <button
             type="button"
@@ -311,7 +325,7 @@
             data-bs-toggle="modal"
             data-bs-target="#deleteModal"
           >
-            {$_('app.moderator.deleteall')}
+            {$_("app.moderator.deleteall")}
           </button>
         </div>
       {/if}
@@ -331,7 +345,7 @@
 
     {#if answeredItems.length > 0}
       <div class="mt-3">
-        {$_('app.questions.answered')}
+        {$_("app.questions.answered")}
         <ul class="list-group">
           <List items={answeredItems} {loggedIn} />
         </ul>
@@ -340,7 +354,7 @@
 
     {#if hiddenItems.length > 0}
       <div class="mt-3">
-        {$_('app.questions.hidden')}
+        {$_("app.questions.hidden")}
         <ul class="list-group">
           <List items={hiddenItems} {loggedIn} />
         </ul>
@@ -349,9 +363,8 @@
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
-      {$_('app.opensource')} <a href="https://github.com/joachimschmidt557/nochfragen"
-        >open source</a
-      >.
+      {$_("app.opensource")}
+      <a href="https://github.com/joachimschmidt557/nochfragen">open source</a>.
     </p>
   </div>
 </main>
@@ -366,7 +379,9 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="loginModalLabel">{$_('app.login.title')}</h5>
+        <h5 class="modal-title" id="loginModalLabel">
+          {$_("app.login.title")}
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -381,7 +396,9 @@
               {passwordModalAlert}
             </div>
           {/if}
-          <label for="password" class="form-label">{$_('app.login.passwordtitle')}</label>
+          <label for="password" class="form-label"
+            >{$_("app.login.passwordtitle")}</label
+          >
           <input
             bind:value={password}
             type="password"
@@ -393,9 +410,11 @@
           <button
             type="button"
             class="btn btn-secondary"
-            data-bs-dismiss="modal">{$_('app.login.exit')}</button
+            data-bs-dismiss="modal">{$_("app.login.exit")}</button
           >
-          <button type="submit" class="btn btn-primary">{$_('app.login.action')}</button>
+          <button type="submit" class="btn btn-primary"
+            >{$_("app.login.action")}</button
+          >
         </div>
       </form>
     </div>
@@ -411,7 +430,9 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="deleteModalLabel">{$_('app.deleteallmodal.title')}</h5>
+        <h5 class="modal-title" id="deleteModalLabel">
+          {$_("app.deleteallmodal.title")}
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -426,16 +447,18 @@
           </div>
         {/if}
         <p>
-          {$_('app.deleteallmodal.warning')}
+          {$_("app.deleteallmodal.warning")}
         </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
-          >{$_('app.deleteallmodal.exit')}</button>
+          >{$_("app.deleteallmodal.exit")}</button
+        >
         <button
           type="submit"
           class="btn btn-danger"
-          on:click={deleteAllQuestions}>{$_('app.deleteallmodal.action')}</button
+          on:click={deleteAllQuestions}
+          >{$_("app.deleteallmodal.action")}</button
         >
       </div>
     </div>

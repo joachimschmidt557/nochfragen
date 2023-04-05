@@ -1,5 +1,5 @@
 <script>
-  import { _, t, format } from 'svelte-i18n';
+  import { _, t, format } from "svelte-i18n";
   export let item;
   export let loggedIn;
 

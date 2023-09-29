@@ -144,7 +144,9 @@
       .then((data) => {
         loggedIn = data.loggedIn;
       })
-      .catch((error) => (alertDanger = error));
+      .catch((error) => {
+        alertDanger = error;
+      });
   }
 
   async function login() {
@@ -230,6 +232,16 @@
     alertDanger = "";
   }
 
+  function translateAlertDanger(error) {
+    switch (error.message) {
+      case "NetworkError when attempting to fetch resource.":
+        return $_("response.error.type.network");
+      default:
+        // Could not translate in this case
+        return toString(error);
+    }
+  }
+
   // Source https://dev.to/jorik/country-code-to-flag-emoji-a21
   function getFlagEmoji(countryCode) {
     return countryCode
@@ -297,7 +309,7 @@
 
     {#if alertDanger !== ""}
       <div class="alert alert-danger alert-dismissible" role="alert">
-        {alertDanger}
+        {translateAlertDanger(alertDanger)}
         <button
           on:click={dismissAlertDanger}
           type="button"

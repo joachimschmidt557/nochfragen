@@ -76,6 +76,10 @@
   },
   "response":{
       "error":{
+          "type":
+          {
+            "network": "Netzwerk Fehler beim Versuch, Resource zu laden."
+          } ,
           "question":
           {
               "general": "Fehler beim Fragen aufrufen",

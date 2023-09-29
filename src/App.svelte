@@ -17,7 +17,7 @@
   addMessages("de", de);
 
   let languages = [
-    { id: 0, locale: "en", text: `English` },
+    { id: 0, locale: "us", text: `English` },
     { id: 1, locale: "de", text: `Deutsch` },
   ];
 
@@ -229,30 +229,40 @@
   function dismissAlertDanger() {
     alertDanger = "";
   }
-</script>
 
+  // Source https://dev.to/jorik/country-code-to-flag-emoji-a21
+  function getFlagEmoji(countryCode) {
+    return countryCode
+      .toUpperCase()
+      .replace(/./g, (char) =>
+        String.fromCodePoint(127397 + char.charCodeAt())
+      );
+  }
+</script>
 
 <nav class="navbar">
   <div class="container">
     <span class="navbar-brand mb-0 h1">{$_("app.title")} </span>
     <span class="navbar-brand mb-0 h1">
-    <select
-      class="form-select"
-      bind:value={selected}
-      on:change={switchLanguage}
-    >
-      {#each languages as lang}
-        {#if lang.id === 0}
-          <option value={lang.id} selected="selected">
-            {lang.text}
-          </option>
-        {:else}
-          <option value={lang.id} selected="">
-            {lang.text}
-          </option>
-        {/if}
-      {/each}
-    </select>
+      <select
+        class="form-select"
+        bind:value={selected}
+        on:change={switchLanguage}
+      >
+        {#each languages as lang}
+          {#if lang.id === 0}
+            <option value={lang.id} selected="selected">
+              {getFlagEmoji(lang.locale)}
+              {lang.text}
+            </option>
+          {:else}
+            <option value={lang.id} selected="">
+              {getFlagEmoji(lang.locale)}
+              {lang.text}
+            </option>
+          {/if}
+        {/each}
+      </select>
     </span>
 
     {#if loggedIn}

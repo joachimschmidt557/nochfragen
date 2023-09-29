@@ -235,8 +235,9 @@
 <nav class="navbar">
   <div class="container">
     <span class="navbar-brand mb-0 h1">{$_("app.title")} </span>
+    <span class="navbar-brand mb-0 h1">
     <select
-      class="navbar-form-select"
+      class="form-select"
       bind:value={selected}
       on:change={switchLanguage}
     >
@@ -252,6 +253,7 @@
         {/if}
       {/each}
     </select>
+    </span>
 
     {#if loggedIn}
       <button type="button" on:click={logout} class="btn"

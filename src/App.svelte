@@ -233,12 +233,13 @@
   }
 
   function translateAlertDanger(error) {
+    console.log(error.message);
     switch (error.message) {
       case "NetworkError when attempting to fetch resource.":
-        return $_("response.error.type.network");
+        return "response.error.type.network";
       default:
         // Could not translate in this case
-        return toString(error);
+        return "response.error.type.network";
     }
   }
 
@@ -309,7 +310,7 @@
 
     {#if alertDanger !== ""}
       <div class="alert alert-danger alert-dismissible" role="alert">
-        {translateAlertDanger(alertDanger)}
+        {$_(translateAlertDanger(alertDanger))}
         <button
           on:click={dismissAlertDanger}
           type="button"

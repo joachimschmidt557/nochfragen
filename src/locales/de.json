@@ -1,109 +1,101 @@
 {
   "status": {
-      "disconnected": "Verbindung getrennt"
+    "disconnected": "Keine Verbindung"
   },
   "app": {
-      "title": "NochFragen?",
-      "refresh": "Neu laden",
-      "moderator" :{
-          "login": "Moderator Login",
-          "logout": "Logout",
-          "export": "Exportieren",
-          "deleteall": "Alle Fragen löschen"
-      },
-      "questions": {
-          "answered": "Beantwortete Fragen",
-          "hidden": "Verdeckte Fragen",
-          "item":{
-              "upvoted": "Upvoted",
-              "upvote": "Upvote",
-              "delete": "Löschen",
-              "status":{
-                  "hidden": "Verdeckt",
-                  "unanswered": "Unbeantwortet",
-                  "answering": "Wird beantwortet",
-                  "answered": "Beantwortet"
-              }
-          }
-      },
-
-      "surveys": {
-          "creation":{
-
-          },
-          "delete": "Löschen",
-          "hide": "Verdecken",
-          "show": "Zeigen",
-          "submit": "Abschicken"
-      },
-
-      "login":{
-          "title": "Login",
-          "exit": "Schließen",
-          "passwordtitle": "Passwort:",
-          "action": "Login"
-      },
-      "deleteallmodal": {
-          "title": "Alle Fragen löschen?",
-          "exit": "Schließen",
-          "warning": "Bist du dir sicher, dass du alle Fragen löschen möchtest? Alle Fragen gehen unwiederbringlich verloren.",
-          "action": "Alle Fragen löschen"
-      },
-
-
-
-      "exportmodal": {
-          "title": "Fragen exportieren",
-          "description": "Du kannst alle Dateien in eine CSV Datei exportieren.",
-          "exit": "Schließen",
-          "action": "Exportieren"
-      },
-
-      "ask":{
-          "title": "Stelle eine Frage",
-          "moderationnotice": "Fragen werden moderiert!",
-          "action": "Fragen"
-      },
-      "surveycreationmodal":{
-          "title": "Erstelle eine Umfrage",
-          "action": "Umfrage erstellen",
-          "remove": "Option entfernen",
-          "add": "Option hinzufügen",
-          "description": "Umfragen sind initial verdeckt."
-
-      },
-      "opensource": "Diese App ist "
-  },
-  "response":{
-      "error":{
-          "type":
-          {
-            "network": "Netzwerk Fehler beim Versuch, Resource zu laden."
-          } ,
-          "question":
-          {
-              "general": "Fehler beim Fragen aufrufen",
-              "deleteall": "Fehler beim Löschen aller Fragen",
-              "submit": "Fehler beim Stellen der Frage: {detail}"
-          } ,
-          "survey":{
-              "general":"Fehler beim Umfragen abrufen",
-              "serverreturn": "Serverantwort: {status} {statusText}."
-          } ,
-          "ask":
-          {
-              "serverreturn": "Serverantwort: {status} {statusText}."
-          },
-          "password": "Falsches Passwort",
-          "login":{
-              "serverreturn":"Fehler beim Einloggen. Serverantwort: {status} {statusText}"
-          } ,
-          "logout": "Fehler beim Ausloggen"
-      },
-      "success":{
-          "question":{
-              "submit": "Frage gestellt" 
-          }
+    "title": "Fragen",
+    "refresh": "Neu laden",
+    "moderator": {
+      "login": "Moderator Login",
+      "logout": "Logout",
+      "export": "Exportieren",
+      "deleteall": "Alle Fragen löschen"
+    },
+    "questions": {
+      "answered": "Beantwortete Fragen",
+      "hidden": "Verdeckte Fragen",
+      "item": {
+        "upvoted": "Upvoted",
+        "upvote": "Upvote",
+        "delete": "Löschen",
+        "status": {
+          "hidden": "Verdeckt",
+          "unanswered": "Unbeantwortet",
+          "answering": "Wird beantwortet",
+          "answered": "Beantwortet"
+        }
       }
+    },
+
+    "surveys": {
+      "creation": {},
+      "delete": "Löschen",
+      "hide": "Verdecken",
+      "show": "Zeigen",
+      "submit": "Abschicken"
+    },
+
+    "login": {
+      "title": "Login",
+      "exit": "Schließen",
+      "passwordtitle": "Passwort:",
+      "action": "Login"
+    },
+    "deleteallmodal": {
+      "title": "Alle Fragen löschen?",
+      "exit": "Schließen",
+      "warning": "Bist du dir sicher, dass du alle Fragen löschen möchtest? Alle Fragen gehen unwiederbringlich verloren.",
+      "action": "Alle Fragen löschen"
+    },
+
+    "exportmodal": {
+      "title": "Fragen exportieren",
+      "description": "Du kannst alle Dateien in eine CSV Datei exportieren.",
+      "exit": "Schließen",
+      "action": "Exportieren"
+    },
+
+    "ask": {
+      "title": "Stelle eine Frage",
+      "moderationnotice": "Fragen werden moderiert.",
+      "action": "Fragen"
+    },
+    "surveycreationmodal": {
+      "title": "Erstelle eine Umfrage",
+      "action": "Umfrage erstellen",
+      "remove": "Option entfernen",
+      "add": "Option hinzufügen",
+      "description": "Umfragen sind initial unsichtbar."
+    },
+    "opensource": "Diese App ist "
+  },
+  "response": {
+    "error": {
+      "type": {
+        "network": "Netzwerk Fehler beim Versuch, Resource zu laden."
+      },
+      "question": {
+        "general": "Fehler beim Fragen aufrufen",
+        "deleteall": "Fehler beim Löschen aller Fragen",
+        "submit": "Fehler beim Stellen der Frage: {detail}"
+      },
+      "survey": {
+        "general": "Fehler beim Umfragen abrufen",
+        "serverreturn": "Serverantwort: {status} {statusText}."
+      },
+      "ask": {
+        "serverreturn": "Serverantwort: {status} {statusText}."
+      },
+      "password": "Falsches Passwort",
+      "login": {
+        "serverreturn": "Fehler beim Einloggen. Serverantwort: {status} {statusText}"
+      },
+      "logout": "Fehler beim Ausloggen"
+    },
+    "success": {
+      "question": {
+        "submit": "Frage gestellt"
+      }
+    }
   }
 }

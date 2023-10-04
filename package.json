@@ -10,7 +10,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "prettier": "prettier --write --plugin-search-dir=. ./**/*.svelte"
+    "prettier": "prettier --write --plugin-search-dir=. ./**/*.svelte ./**/*.json"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",

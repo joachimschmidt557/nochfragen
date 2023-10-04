@@ -1,4 +1,6 @@
 <script>
+  import { _, t, format } from "svelte-i18n";
+
   export let item;
   export let loggedIn;
 
@@ -45,7 +47,7 @@
             type="button"
             class="btn btn-danger"
           >
-            Delete
+            {$_("app.questions.item.delete")}
           </button>
           <button
             on:click={() => changeState(hidden)}
@@ -54,7 +56,7 @@
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
-            Hidden
+            {$_("app.questions.item.status.hidden")}
           </button>
           <button
             on:click={() => changeState(unanswered)}
@@ -63,7 +65,7 @@
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
-            Unanswered
+            {$_("app.questions.item.status.unanswered")}
           </button>
           <button
             on:click={() => changeState(answering)}
@@ -72,7 +74,7 @@
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
-            Answering
+            {$_("app.questions.item.status.answering")}
           </button>
           <button
             on:click={() => changeState(answered)}
@@ -81,7 +83,7 @@
               ? "btn btn-secondary active"
               : "btn btn-secondary"}
           >
-            Answered
+            {$_("app.questions.item.status.answered")}
           </button>
         {/if}
       </div>
@@ -93,9 +95,9 @@
         style="min-width: 8em"
       >
         {#if item.upvoted}
-          Upvoted
+          {$_("app.questions.item.upvoted")}
         {:else}
-          Upvote
+          {$_("app.questions.item.upvote")}
         {/if}
         <span class="badge bg-secondary">{item.upvotes}</span>
       </button>

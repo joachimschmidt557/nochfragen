@@ -1,13 +1,46 @@
 <script>
   import * as bootstrap from "bootstrap";
   import { onMount } from "svelte";
-
   import Ask from "./Ask.svelte";
   import Item from "./Item.svelte";
   import List from "./List.svelte";
   import SurveyList from "./SurveyList.svelte";
   import CreateSurvey from "./CreateSurvey.svelte";
   import Export from "./Export.svelte";
+  import { _ } from "svelte-i18n";
+  import en from "./locales/en.json";
+  import de from "./locales/de.json";
+  import { init, addMessages, getLocaleFromNavigator } from "svelte-i18n";
+  const defaultLocale = "en";
+
+  addMessages("en", en);
+  addMessages("de", de);
+
+  let languages = [
+    { id: 0, locale: "us", text: `English` },
+    { id: 1, locale: "de", text: `Deutsch` },
+  ];
+
+  let selected = 0;
+
+  languages.forEach((l) => {
+    if (l.locale === getLocaleFromNavigator()) {
+      selected = l.id;
+    }
+  });
+
+  init({
+    fallbackLocale: "en",
+    initialLocale: getLocaleFromNavigator(),
+  });
+
+  function switchLanguage() {
+    let s = languages[selected];
+    init({
+      fallbackLocale: "en",
+      initialLocale: s.locale,
+    });
+  }
 
   onMount(() => {
     poll();
@@ -65,10 +98,16 @@
         connected = true;
 
         if (!questions.ok) {
-          throw new ServerError(`Error fetching questions`, statusCode);
+          throw new ServerError(
+            $_("response.error.question.general"),
+            statusCode
+          );
         }
         if (!surveys.ok) {
-          throw new ServerError(`Error fetching surveys`, statusCode);
+          throw new ServerError(
+            $_("response.error.survey.general"),
+            statusCode
+          );
         }
 
         return [await questions.json(), await surveys.json()];
@@ -105,7 +144,9 @@
       .then((data) => {
         loggedIn = data.loggedIn;
       })
-      .catch((error) => (alertDanger = error));
+      .catch((error) => {
+        alertDanger = error;
+      });
   }
 
   async function login() {
@@ -115,10 +156,15 @@
     })
       .then((response) => {
         if (response.status === 403) {
-          throw new Error("Wrong password");
+          throw new Error($_("response.error.password"));
         } else if (!response.ok) {
           throw new Error(
-            "Error while logging in. Server returned ${response.status} ${response.statusText}"
+            $_("response.error.login.serverreturn", {
+              values: {
+                status: response.status,
+                statusText: response.statusText,
+              },
+            })
           );
         }
 
@@ -140,7 +186,7 @@
     await fetch(`api/logout`, { method: "POST" })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Error while logging out");
+          throw new Error($_("response.error.passwordlogout"));
         }
 
         loggedIn = false;
@@ -153,7 +199,7 @@
     await fetch(`api/questions`, { method: "DELETE" })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Error while deleting all questions");
+          throw new Error($_("response.error.question.deleteall"));
         }
 
         items = [];
@@ -168,12 +214,14 @@
   }
 
   async function submitSuccess() {
-    alertSuccess = "Question submitted";
+    alertSuccess = $_("response.success.question.submit");
     await updateQuestionsAndSurveys();
   }
 
   function submitError(event) {
-    alertDanger = `Error submitting question: ${event.detail}`;
+    alertDanger = $_("response.error.question.submit", {
+      values: { detail: event.detail },
+    });
   }
 
   function dismissAlertSuccess() {
@@ -183,21 +231,67 @@
   function dismissAlertDanger() {
     alertDanger = "";
   }
+
+  function translateAlertDanger(error) {
+    console.log(error.message);
+    switch (error.message) {
+      case "NetworkError when attempting to fetch resource.":
+        return "response.error.type.network";
+      default:
+        // Could not translate in this case
+        return "response.error.type.network";
+    }
+  }
+
+  // Source https://dev.to/jorik/country-code-to-flag-emoji-a21
+  function getFlagEmoji(countryCode) {
+    return countryCode
+      .toUpperCase()
+      .replace(/./g, (char) =>
+        String.fromCodePoint(127397 + char.charCodeAt())
+      );
+  }
 </script>
 
 <nav class="navbar">
   <div class="container">
-    <span class="navbar-brand mb-0 h1">Questions</span>
-    {#if loggedIn}
-      <button type="button" on:click={logout} class="btn">Logout</button>
-    {:else}
-      <button
-        type="button"
-        class="btn"
-        data-bs-toggle="modal"
-        data-bs-target="#loginModal">Moderator Login</button
+    <span class="navbar-brand mb-0 h1">{$_("app.title")} </span>
+    <span class="ms-auto">
+      <select
+        class="form-select"
+        bind:value={selected}
+        on:change={switchLanguage}
       >
-    {/if}
+        {#each languages as lang}
+          {#if lang.id === 0}
+            <option value={lang.id} selected="selected">
+              {getFlagEmoji(lang.locale)}
+              {lang.text}
+            </option>
+          {:else}
+            <option value={lang.id} selected="">
+              {getFlagEmoji(lang.locale)}
+              {lang.text}
+            </option>
+          {/if}
+        {/each}
+      </select>
+    </span>
+
+    <span class="navbar-brand mb-0 h1">
+      {#if loggedIn}
+        <button type="button" on:click={logout} class="btn"
+          >{$_("app.moderator.logout")}</button
+        >
+      {:else}
+        <button
+          type="button"
+          class="btn"
+          data-bs-toggle="modal"
+          data-bs-target="#loginModal">{$_("app.moderator.login")}</button
+        >
+      {/if}
+    </span>
   </div>
 </nav>
 <main>
@@ -216,7 +310,7 @@
 
     {#if alertDanger !== ""}
       <div class="alert alert-danger alert-dismissible" role="alert">
-        {alertDanger}
+        {$_(translateAlertDanger(alertDanger))}
         <button
           on:click={dismissAlertDanger}
           type="button"
@@ -234,10 +328,12 @@
           class="btn btn-outline-primary"
           disabled={updating}
         >
-          Refresh
+          {$_("app.refresh")}
         </button>
         {#if !connected}
-          <span class="text-center text-muted fst-italic"> disconnected </span>
+          <span class="text-center text-muted fst-italic">
+            {$_("status.disconnected")}
+          </span>
         {/if}
       </div>
       {#if loggedIn}
@@ -248,7 +344,7 @@
             data-bs-toggle="modal"
             data-bs-target="#exportModal"
           >
-            Export
+            {$_("app.moderator.export")}
           </button>
           <button
             type="button"
@@ -256,7 +352,7 @@
             data-bs-toggle="modal"
             data-bs-target="#deleteModal"
           >
-            Delete all questions
+            {$_("app.moderator.deleteall")}
           </button>
         </div>
       {/if}
@@ -276,7 +372,7 @@
 
     {#if answeredItems.length > 0}
       <div class="mt-3">
-        Answered questions
+        {$_("app.questions.answered")}
         <ul class="list-group">
           <List items={answeredItems} {loggedIn} />
         </ul>
@@ -285,7 +381,7 @@
 
     {#if hiddenItems.length > 0}
       <div class="mt-3">
-        Hidden questions
+        {$_("app.questions.hidden")}
         <ul class="list-group">
           <List items={hiddenItems} {loggedIn} />
         </ul>
@@ -294,9 +390,8 @@
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
-      This software is <a href="https://github.com/joachimschmidt557/nochfragen"
-        >open source</a
-      >.
+      {$_("app.opensource")}
+      <a href="https://github.com/joachimschmidt557/nochfragen">open source</a>.
     </p>
   </div>
 </main>
@@ -311,7 +406,9 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+        <h5 class="modal-title" id="loginModalLabel">
+          {$_("app.login.title")}
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -326,7 +423,9 @@
               {passwordModalAlert}
             </div>
           {/if}
-          <label for="password" class="form-label">Password</label>
+          <label for="password" class="form-label"
+            >{$_("app.login.passwordtitle")}</label
+          >
           <input
             bind:value={password}
             type="password"
@@ -338,9 +437,11 @@
           <button
             type="button"
             class="btn btn-secondary"
-            data-bs-dismiss="modal">Close</button
+            data-bs-dismiss="modal">{$_("app.login.exit")}</button
           >
-          <button type="submit" class="btn btn-primary">Login</button>
+          <button type="submit" class="btn btn-primary"
+            >{$_("app.login.action")}</button
+          >
         </div>
       </form>
     </div>
@@ -356,7 +457,9 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="deleteModalLabel">Delete all questions</h5>
+        <h5 class="modal-title" id="deleteModalLabel">
+          {$_("app.deleteallmodal.title")}
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -371,17 +474,18 @@
           </div>
         {/if}
         <p>
-          Are you sure you want to delete all questions? This cannot be undone.
+          {$_("app.deleteallmodal.warning")}
         </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
-          >Close</button
+          >{$_("app.deleteallmodal.exit")}</button
         >
         <button
           type="submit"
           class="btn btn-danger"
-          on:click={deleteAllQuestions}>Delete</button
+          on:click={deleteAllQuestions}
+          >{$_("app.deleteallmodal.action")}</button
         >
       </div>
     </div>

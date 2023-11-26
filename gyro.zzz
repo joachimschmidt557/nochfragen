@@ -21,3 +21,8 @@ deps:
       url: "https://github.com/Hejsil/zig-clap.git"
       ref: master
       root: clap.zig
+  sqlite:
+    git:
+      url: "https://github.com/vrischmann/zig-sqlite"
+      ref: 32e8023978af198040d9053e97127d3d0bb5d99f
+      root: sqlite.zig

@@ -1,3 +1,4 @@
 git https://github.com/Luukdegram/apple_pie.git master src/apple_pie.zig 5eaaabdced4f9b8d6cee947b465e7ea16ea61f42
 git https://github.com/kristoff-it/zig-okredis.git master src/okredis.zig 96a3b98f88f4ea79fd9cce704f102f4b80921ba6
 git https://github.com/Hejsil/zig-clap.git master clap.zig 4f4196fc3bc95c4bd3b12ce2e4a5f1050742cd3c
+git https://github.com/vrischmann/zig-sqlite 32e8023978af198040d9053e97127d3d0bb5d99f sqlite.zig 32e8023978af198040d9053e97127d3d0bb5d99f

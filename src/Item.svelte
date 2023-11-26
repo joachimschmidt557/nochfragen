@@ -4,11 +4,12 @@
   export let item;
   export let loggedIn;
 
+  let deleted = false;
+
   const hidden = 0;
   const unanswered = 1;
-  const deleted = 2;
-  const answering = 3;
-  const answered = 4;
+  const answering = 2;
+  const answered = 3;
 
   async function upvote() {
     await fetch(`api/question/${item.id}`, {
@@ -26,9 +27,15 @@
       body: JSON.stringify({ upvote: false, state: state }),
     }).then(() => (item.state = state));
   }
+
+  async function deleteQuestion() {
+    await fetch(`api/question/${item.id}`, {
+      method: "DELETE",
+    }).then(() => (deleted = true));
+  }
 </script>
 
-{#if item.state !== deleted}
+{#if !deleted}
   <li
     class={item.state === answering
       ? "list-group-item active d-flex justify-content-between"
@@ -43,7 +50,7 @@
       <div class="btn-group" role="group">
         {#if loggedIn}
           <button
-            on:click={() => changeState(deleted)}
+            on:click={() => deleteQuestion()}
             type="button"
             class="btn btn-danger"
           >

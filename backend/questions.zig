@@ -112,6 +112,10 @@ const answered_question_query = std.fmt.comptimePrint(
     @enumToInt(QuestionState.answered),
 });
 
+const delete_question_query =
+    \\DELETE FROM questions WHERE id = @id;
+;
+
 const delete_all_questions_query =
     \\DELETE FROM questions;
 ;
@@ -119,7 +123,6 @@ const delete_all_questions_query =
 const QuestionState = enum(u32) {
     hidden,
     unanswered,
-    deleted,
     answering,
     answered,
 
@@ -127,7 +130,6 @@ const QuestionState = enum(u32) {
         return switch (self) {
             .hidden => "hidden",
             .unanswered => "unanswered",
-            .deleted => "deleted",
             .answering => "answering",
             .answered => "answered",
         };
@@ -135,7 +137,7 @@ const QuestionState = enum(u32) {
 };
 
 const Question = struct {
-    id: u64 = 0, // TODO remove default value
+    id: u64,
     text: []const u8,
     upvotes: u32 = 0,
     state: QuestionState = .unanswered,
@@ -144,16 +146,7 @@ const Question = struct {
     answering_at: i64,
     answered_at: i64,
 };
-// TODO remove
-const QuestionInternal = struct {
-    text: []const u8,
-    upvotes: u32 = 0,
-    state: u32 = @enumToInt(QuestionState.unanswered),
-    created_at: i64,
-    modified_at: i64 = -1,
-    answering_at: i64 = -1,
-    answered_at: i64 = -1,
-};
+
 const QuestionInternalWithoutId = struct {
     text: sqlite.Text,
     upvotes: u32 = 0,
@@ -163,8 +156,7 @@ const QuestionInternalWithoutId = struct {
     answering_at: i64 = -1,
     answered_at: i64 = -1,
 };
-// TODO rename to `QuestionInternal`
-const QuestionInternalSqlite = struct {
+const QuestionInternal = struct {
     id: u64,
     text: sqlite.Text,
     upvotes: u32 = 0,
@@ -178,7 +170,7 @@ const QuestionInternalSqlite = struct {
 const QuestionIterator = struct {
     allocator: std.mem.Allocator,
     statement: sqlite.DynamicStatement,
-    iterator: sqlite.Iterator(QuestionInternalSqlite),
+    iterator: sqlite.Iterator(QuestionInternal),
 
     fn init(allocator: std.mem.Allocator, db: *sqlite.Db, include_hidden: bool) !QuestionIterator {
         const query = if (include_hidden)
@@ -191,7 +183,7 @@ const QuestionIterator = struct {
         return QuestionIterator{
             .allocator = allocator,
             .statement = statement,
-            .iterator = try statement.iterator(QuestionInternalSqlite, .{}),
+            .iterator = try statement.iterator(QuestionInternal, .{}),
         };
     }
 
@@ -207,7 +199,7 @@ const QuestionIterator = struct {
             .id = question_internal.id,
             .text = question_internal.text.data,
             .upvotes = question_internal.upvotes,
-            .state = std.meta.intToEnum(QuestionState, question_internal.state) catch .deleted,
+            .state = std.meta.intToEnum(QuestionState, question_internal.state) catch .unanswered,
             .created_at = question_internal.created_at,
             .modified_at = question_internal.modified_at,
             .answering_at = question_internal.answering_at,
@@ -234,8 +226,6 @@ pub fn listQuestions(ctx: *Context, response: *http.Response, request: http.Requ
     try json_write_stream.beginArray();
 
     while (try iter.next()) |question| {
-        if (question.state == .deleted) continue;
-
         const str_id = try std.fmt.allocPrint(allocator, "question:{}", .{question.id});
         const upvoted = (try session.get(bool, str_id)) orelse false;
 
@@ -286,8 +276,6 @@ pub fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Re
     );
 
     while (try iter.next()) |question| {
-        if (question.state == .deleted) continue;
-
         try std.json.encodeJsonString(question.text, .{}, response.writer());
         try response.writer().print(",{},{s},", .{
             question.upvotes,
@@ -363,7 +351,6 @@ pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Req
             // don't track these separately
             .hidden,
             .unanswered,
-            .deleted,
             => try ctx.db.exec(modify_question_query, .{}, .{
                 .state = request_data.state,
                 .modified_at = std.time.timestamp(),
@@ -381,6 +368,21 @@ pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Req
             }),
         }
     }
+
+    try ok(response);
+}
+
+pub fn deleteQuestion(ctx: *Context, response: *http.Response, request: http.Request, raw_id: []const u8) !void {
+    const allocator = request.arena;
+
+    const id = std.fmt.parseInt(u32, raw_id, 10) catch return badRequest(response, "Invalid ID");
+
+    var store = Store{ .redis_client = &ctx.redis_client };
+    var session = store.get(allocator, request, "nochfragen_session");
+    const logged_in = (try session.get(bool, "authenticated")) orelse false;
+    if (!logged_in) return forbidden(response, "Forbidden");
+
+    try ctx.db.exec(delete_question_query, .{}, .{.id = id});
 
     try ok(response);
 }

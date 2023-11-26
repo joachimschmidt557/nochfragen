@@ -137,6 +137,7 @@ fn startServer(
             builder.post("/api/questions", questions.addQuestion),
             builder.delete("/api/questions", questions.deleteAllQuestions),
             builder.put("/api/question/:id", questions.modifyQuestion),
+            builder.delete("/api/question/:id", questions.deleteQuestion),
 
             builder.get("/api/export", questions.exportQuestions),
 

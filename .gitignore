@@ -3,6 +3,8 @@
 zig-out/
 zig-cache/
 
+db.sqlite
+
 .gyro/
 deps.zig
 

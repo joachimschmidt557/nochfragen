@@ -34,6 +34,7 @@ pub fn main() !void {
         clap.parseParam("-h, --help                     Display this help and exit.") catch unreachable,
         clap.parseParam("--listen-address <IP:PORT>     Address to listen for connections") catch unreachable,
         clap.parseParam("--redis-address <IP:PORT>      Address to connect to redis") catch unreachable,
+        clap.parseParam("--sqlite-db <PATH>             Path to the SQLite database") catch unreachable,
         clap.parseParam("--root-dir <PATH>              Path to the static HTML, CSS and JS content") catch unreachable,
     };
 
@@ -63,7 +64,7 @@ pub fn main() !void {
         const listen_address = res.args.@"listen-address" orelse default_listen_address;
         const redis_address = res.args.@"redis-address" orelse default_redis_address;
         const root_dir = res.args.@"root-dir" orelse "public/";
-        const db_file = "db.sqlite";
+        const db_file = res.args.@"root-dir" orelse "db.sqlite";
 
         startServer(allocator, listen_address, redis_address, db_file, root_dir) catch |err| {
             log.err("Error during server execution: {}", .{err});
@@ -91,7 +92,7 @@ fn startServer(
     allocator: std.mem.Allocator,
     listen_address: ParsedAddress,
     redis_address: ParsedAddress,
-    db_file: [:0]const u8,
+    db_file: []const u8,
     root_dir: []const u8,
 ) !void {
     var context: Context = .{
@@ -108,7 +109,7 @@ fn startServer(
     defer context.redis_client.close();
 
     context.db = try sqlite.Db.init(.{
-        .mode = sqlite.Db.Mode{ .File = db_file },
+        .mode = sqlite.Db.Mode{ .File = try allocator.dupeZ(u8, db_file) },
         .open_flags = .{ .write = true, .create = true },
     });
     defer context.db.deinit();

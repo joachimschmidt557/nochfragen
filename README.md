@@ -37,7 +37,7 @@ npm run build
 ## Usage
 
 ```
-Usage: nochfragen [-h] [--listen-address <IP:PORT>] [--redis-address <IP:PORT>] [--root-dir <PATH>]
+Usage: nochfragen [-h] [--listen-address <IP:PORT>] [--redis-address <IP:PORT>] [--sqlite-db <PATH>] [--root-dir <PATH>]
 
 Options:
 
@@ -49,6 +49,9 @@ Options:
 
         --redis-address <IP:PORT>
             Address to connect to redis
+
+        --sqlite-db <PATH>
+            Path to the SQLite database
 
         --root-dir <PATH>
             Path to the static HTML, CSS and JS content

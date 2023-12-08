@@ -113,6 +113,7 @@ fn startServer(
     });
     defer context.db.deinit();
     try questions.initializeDatabase(&context.db);
+    try surveys.initializeDatabase(&context.db);
 
     try fs.init(allocator, .{
         .dir_path = try std.fs.path.join(allocator, &.{ root_dir, "build" }),
@@ -144,6 +145,7 @@ fn startServer(
             builder.get("/api/surveys", surveys.listSurveys),
             builder.post("/api/surveys", surveys.addSurvey),
             builder.put("/api/survey/:id", surveys.modifySurvey),
+            builder.delete("/api/survey/:id", surveys.deleteSurvey),
         }),
     );
 }

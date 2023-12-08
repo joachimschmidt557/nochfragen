@@ -5,12 +5,13 @@
 
   let choice = -1;
 
+  let deleted = false;
+
   const vote = 0;
   const modifyState = 1;
 
   const hidden = 0;
   const visible = 1;
-  const deleted = 2;
 
   async function submit() {
     await fetch(`api/survey/${item.id}`, {
@@ -45,13 +46,8 @@
 
   async function del() {
     await fetch(`api/survey/${item.id}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        mode: modifyState,
-        vote: 0,
-        state: deleted,
-      }),
-    }).then(() => (item.state = deleted));
+      method: "DELETE",
+    }).then(() => (deleted = true));
   }
 
   function calcPercent(votes) {
@@ -61,7 +57,7 @@
   }
 </script>
 
-{#if item.state !== deleted}
+{#if !deleted}
   <li class="list-group-item">
     <div class="d-flex w-100 justify-content-between">
       {item.text}
@@ -84,14 +80,14 @@
     </div>
 
     <div class="list-group">
-      {#each item.options as option, index}
+      {#each item.options as option}
         <label class="list-group-item">
           {#if !item.voted}
             <input
               class="form-check-input me-1"
               type="radio"
               bind:group={choice}
-              value={index}
+              value={option.id}
               disabled={item.voted}
             />
           {/if}

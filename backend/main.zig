@@ -2,6 +2,8 @@ const std = @import("std");
 const http = @import("apple_pie");
 const okredis = @import("okredis");
 const clap = @import("clap");
+const sqlite = @import("sqlite");
+
 const fs = http.FileServer;
 const router = http.router;
 const json = std.json;
@@ -32,6 +34,7 @@ pub fn main() !void {
         clap.parseParam("-h, --help                     Display this help and exit.") catch unreachable,
         clap.parseParam("--listen-address <IP:PORT>     Address to listen for connections") catch unreachable,
         clap.parseParam("--redis-address <IP:PORT>      Address to connect to redis") catch unreachable,
+        clap.parseParam("--sqlite-db <PATH>             Path to the SQLite database") catch unreachable,
         clap.parseParam("--root-dir <PATH>              Path to the static HTML, CSS and JS content") catch unreachable,
     };
 
@@ -61,8 +64,9 @@ pub fn main() !void {
         const listen_address = res.args.@"listen-address" orelse default_listen_address;
         const redis_address = res.args.@"redis-address" orelse default_redis_address;
         const root_dir = res.args.@"root-dir" orelse "public/";
+        const db_file = res.args.@"root-dir" orelse "db.sqlite";
 
-        startServer(allocator, listen_address, redis_address, root_dir) catch |err| {
+        startServer(allocator, listen_address, redis_address, db_file, root_dir) catch |err| {
             log.err("Error during server execution: {}", .{err});
             std.process.exit(1);
         };
@@ -88,10 +92,12 @@ fn startServer(
     allocator: std.mem.Allocator,
     listen_address: ParsedAddress,
     redis_address: ParsedAddress,
+    db_file: []const u8,
     root_dir: []const u8,
 ) !void {
     var context: Context = .{
         .redis_client = undefined,
+        .db = undefined,
         .root_dir = try allocator.dupe(u8, root_dir),
     };
     const builder = router.Builder(*Context);
@@ -101,6 +107,14 @@ fn startServer(
 
     try context.redis_client.init(connection);
     defer context.redis_client.close();
+
+    context.db = try sqlite.Db.init(.{
+        .mode = sqlite.Db.Mode{ .File = try allocator.dupeZ(u8, db_file) },
+        .open_flags = .{ .write = true, .create = true },
+    });
+    defer context.db.deinit();
+    try questions.initializeDatabase(&context.db);
+    try surveys.initializeDatabase(&context.db);
 
     try fs.init(allocator, .{
         .dir_path = try std.fs.path.join(allocator, &.{ root_dir, "build" }),
@@ -125,12 +139,14 @@ fn startServer(
             builder.post("/api/questions", questions.addQuestion),
             builder.delete("/api/questions", questions.deleteAllQuestions),
             builder.put("/api/question/:id", questions.modifyQuestion),
+            builder.delete("/api/question/:id", questions.deleteQuestion),
 
             builder.get("/api/export", questions.exportQuestions),
 
             builder.get("/api/surveys", surveys.listSurveys),
             builder.post("/api/surveys", surveys.addSurvey),
             builder.put("/api/survey/:id", surveys.modifySurvey),
+            builder.delete("/api/survey/:id", surveys.deleteSurvey),
         }),
     );
 }

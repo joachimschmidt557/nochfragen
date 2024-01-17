@@ -83,9 +83,16 @@ const list_questions_all_query =
     \\FROM questions
 ;
 
-const increment_upvotes_query =
-    \\UPDATE questions SET upvotes = upvotes + 1 WHERE id = @id;
-;
+const increment_upvotes_query = std.fmt.comptimePrint(
+    \\UPDATE questions SET
+    \\  upvotes = upvotes + 1
+    \\WHERE
+    \\  id = @id AND
+    \\  (state = {} OR state = {})
+, .{
+    @enumToInt(QuestionState.unanswered),
+    @enumToInt(QuestionState.answering),
+});
 
 const modify_question_query =
     \\UPDATE questions SET

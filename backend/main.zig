@@ -66,7 +66,7 @@ pub fn main() !void {
         const listen_address = res.args.@"listen-address" orelse default_listen_address;
         const redis_address = res.args.@"redis-address" orelse default_redis_address;
         const root_dir = res.args.@"root-dir" orelse "public/";
-        const db_file = res.args.@"root-dir" orelse "db.sqlite";
+        const db_file = res.args.@"sqlite-db" orelse "db.sqlite";
         const imprint_url = res.args.@"imprint-url" orelse "/";
         const privacy_policy_url = res.args.@"privacy-policy-url" orelse "/";
 

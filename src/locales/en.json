@@ -67,7 +67,10 @@
       "add": "Add Option",
       "description": "Surveys are hidden by default."
     },
-    "opensource": "This app is "
+
+    "opensource": "This app is ",
+    "imprint": "Imprint",
+    "privacy_policy": "Privacy policy"
   },
   "response": {
     "error": {

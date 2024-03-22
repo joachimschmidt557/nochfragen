@@ -392,6 +392,9 @@
     <p class="text-center text-muted fst-italic">
       {$_("app.opensource")}
       <a href="https://github.com/joachimschmidt557/nochfragen">open source</a>.
+
+      <a href="imprint">{$_("app.imprint")}</a>
+      <a href="privacy-policy">{$_("app.privacy_policy")}</a>
     </p>
   </div>
 </main>

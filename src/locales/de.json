@@ -67,7 +67,10 @@
       "add": "Option hinzufügen",
       "description": "Umfragen sind initial unsichtbar."
     },
-    "opensource": "Diese App ist "
+
+    "opensource": "Diese App ist ",
+    "imprint": "Impressum",
+    "privacy_policy": "Datenschutzerklärung"
   },
   "response": {
     "error": {

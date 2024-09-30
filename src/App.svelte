@@ -75,8 +75,8 @@
   }
 
   function questionOrder(a, b) {
-    const answering = 3;
-    const answered = 4;
+    const answering = 2;
+    const answered = 3;
 
     if (a.state === answering) {
       return -1;
@@ -114,7 +114,7 @@
       })
       .then(([questions, surveys]) => {
         const hidden = 0;
-        const answered = 4;
+        const answered = 3;
 
         questions.sort(questionOrder);
         items = questions.filter(

@@ -10,6 +10,7 @@
   const unanswered = 1;
   const answering = 2;
   const answered = 3;
+  const hiddenAnswered = 4;
 
   async function upvote() {
     await fetch(`api/question/${item.id}`, {
@@ -91,6 +92,15 @@
               : "btn btn-secondary"}
           >
             {$_("app.questions.item.status.answered")}
+          </button>
+          <button
+            on:click={() => changeState(hiddenAnswered)}
+            type="button"
+            class={item.state === hiddenAnswered
+              ? "btn btn-secondary active"
+              : "btn btn-secondary"}
+          >
+            Hidden and answered
           </button>
         {/if}
       </div>

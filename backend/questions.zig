@@ -132,6 +132,7 @@ const QuestionState = enum(u32) {
     unanswered,
     answering,
     answered,
+    hidden_answered,
 
     fn toString(self: QuestionState) []const u8 {
         return switch (self) {
@@ -139,6 +140,7 @@ const QuestionState = enum(u32) {
             .unanswered => "unanswered",
             .answering => "answering",
             .answered => "answered",
+            .hidden_answered => "hidden_answered",
         };
     }
 };
@@ -259,6 +261,11 @@ pub fn listQuestions(ctx: *Context, response: *http.Response, request: http.Requ
 
     try json_write_stream.endArray();
     response.close = true;
+
+    try response.headers.put(
+        "Access-Control-Allow-Origin",
+        "*",
+    );
 }
 
 pub fn exportQuestions(ctx: *Context, response: *http.Response, request: http.Request) !void {
@@ -314,6 +321,7 @@ pub fn addQuestion(ctx: *Context, response: *http.Response, request: http.Reques
 
     try ctx.db.exec(insert_question_query, .{}, QuestionInternalWithoutId{
         .text = sqlite.Text{ .data = request_data.text },
+        .state = @enumToInt(QuestionState.hidden),
         .created_at = std.time.timestamp(),
     });
 
@@ -358,6 +366,7 @@ pub fn modifyQuestion(ctx: *Context, response: *http.Response, request: http.Req
             // don't track these separately
             .hidden,
             .unanswered,
+            .hidden_answered,
             => try ctx.db.exec(modify_question_query, .{}, .{
                 .state = request_data.state,
                 .modified_at = std.time.timestamp(),

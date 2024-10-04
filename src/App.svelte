@@ -53,6 +53,7 @@
   let items = [];
   let answeredItems = [];
   let hiddenItems = [];
+  let hiddenAnsweredItems = [];
   let surveyItems = [];
 
   let connected = true;
@@ -115,13 +116,15 @@
       .then(([questions, surveys]) => {
         const hidden = 0;
         const answered = 3;
+        const hiddenAnswered = 4;
 
         questions.sort(questionOrder);
         items = questions.filter(
-          (x) => x.state !== answered && x.state !== hidden
+          (x) => x.state !== answered && x.state !== hidden && x.state !== hiddenAnswered
         );
         answeredItems = questions.filter((x) => x.state === answered);
         hiddenItems = questions.filter((x) => x.state === hidden);
+        hiddenAnsweredItems = questions.filter((x) => x.state === hiddenAnswered);
         surveyItems = surveys;
 
         updating = false;
@@ -384,6 +387,15 @@
         {$_("app.questions.hidden")}
         <ul class="list-group">
           <List items={hiddenItems} {loggedIn} />
+        </ul>
+      </div>
+    {/if}
+
+    {#if hiddenAnsweredItems.length > 0}
+      <div class="mt-3">
+        Hidden and Answered
+        <ul class="list-group">
+          <List items={hiddenAnsweredItems} {loggedIn} />
         </ul>
       </div>
     {/if}

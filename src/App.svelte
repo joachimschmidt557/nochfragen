@@ -120,11 +120,16 @@
 
         questions.sort(questionOrder);
         items = questions.filter(
-          (x) => x.state !== answered && x.state !== hidden && x.state !== hiddenAnswered
+          (x) =>
+            x.state !== answered &&
+            x.state !== hidden &&
+            x.state !== hiddenAnswered
         );
         answeredItems = questions.filter((x) => x.state === answered);
         hiddenItems = questions.filter((x) => x.state === hidden);
-        hiddenAnsweredItems = questions.filter((x) => x.state === hiddenAnswered);
+        hiddenAnsweredItems = questions.filter(
+          (x) => x.state === hiddenAnswered
+        );
         surveyItems = surveys;
 
         updating = false;
@@ -403,7 +408,9 @@
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
       {$_("app.opensource")}
-      <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>.
+      <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank"
+        >open source</a
+      >.
 
       <a href="imprint" target="_blank">{$_("app.imprint")}</a>
       <a href="privacy-policy" target="_blank">{$_("app.privacy_policy")}</a>

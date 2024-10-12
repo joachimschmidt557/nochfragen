@@ -403,10 +403,10 @@
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
       {$_("app.opensource")}
-      <a href="https://github.com/joachimschmidt557/nochfragen">open source</a>.
+      <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>.
 
-      <a href="imprint">{$_("app.imprint")}</a>
-      <a href="privacy-policy">{$_("app.privacy_policy")}</a>
+      <a href="imprint" target="_blank">{$_("app.imprint")}</a>
+      <a href="privacy-policy" target="_blank">{$_("app.privacy_policy")}</a>
     </p>
   </div>
 </main>

@@ -7,7 +7,7 @@ RUN curl -LS https://github.com/mattnite/gyro/releases/download/0.7.0/gyro-0.7.0
 RUN curl -LS https://ziglang.org/download/0.10.1/zig-linux-x86_64-0.10.1.tar.xz | tar xJ
 
 WORKDIR /app
-COPY backend ./backend
+COPY backend-zig ./backend-zig
 COPY build.zig gyro.lock gyro.zzz ./
 
 RUN /gyro-0.7.0-linux-x86_64/bin/gyro fetch

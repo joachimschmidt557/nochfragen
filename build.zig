@@ -15,7 +15,7 @@ pub fn build(b: *std.build.Builder) void {
     sqlite_lib.setTarget(target);
     sqlite_lib.setBuildMode(mode);
 
-    const server = b.addExecutable("nochfragen", "backend/main.zig");
+    const server = b.addExecutable("nochfragen", "backend-zig/main.zig");
     server.setTarget(target);
     server.setBuildMode(mode);
     server.use_stage1 = true;
@@ -32,7 +32,7 @@ pub fn build(b: *std.build.Builder) void {
         run_cmd.addArgs(args);
     }
 
-    const ctl = b.addExecutable("nochfragenctl", "backend/ctl.zig");
+    const ctl = b.addExecutable("nochfragenctl", "backend-zig/ctl.zig");
     ctl.setTarget(target);
     ctl.setBuildMode(mode);
     ctl.use_stage1 = true;

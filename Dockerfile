@@ -18,7 +18,7 @@ RUN npm run build
 FROM alpine:3.20 AS app
 
 WORKDIR /app
-COPY --from=backend /app/target/release/backend /app/nochfragen
+COPY --from=backend /app/target/release/nochfragen /app/nochfragen
 COPY --from=frontend /app/build ./build
 
 EXPOSE 8080

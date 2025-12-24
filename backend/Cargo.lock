@@ -87,24 +87,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "backend"
-version = "0.1.0"
-dependencies = [
- "axum",
- "diesel",
- "dotenvy",
- "fred",
- "scrypt",
- "serde",
- "serde_json",
- "time",
- "tokio",
- "tower-http",
- "tower-sessions",
- "tower-sessions-redis-store",
-]
-
-[[package]]
 name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -865,6 +847,24 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "nochfragen"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "diesel",
+ "dotenvy",
+ "fred",
+ "scrypt",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "tower-http",
+ "tower-sessions",
+ "tower-sessions-redis-store",
 ]
 
 [[package]]

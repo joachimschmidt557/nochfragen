@@ -2,6 +2,10 @@ use axum::{
     Router,
     routing::{delete, get, post, put},
 };
+use diesel::r2d2::{self, ConnectionManager};
+use diesel::sqlite::SqliteConnection;
+use dotenvy::dotenv;
+use fred::clients::Pool;
 use fred::interfaces::*;
 use fred::types::{Builder, config::Config};
 use time::Duration;
@@ -9,26 +13,47 @@ use tower_http::services::ServeDir;
 use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
 
+type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+
+#[derive(Clone)]
+struct AppState {
+    db_pool: DbPool,
+    redis_pool: Pool,
+}
+
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
     let listen_addr = std::env::var("LISTEN_ADDRESS").unwrap_or("127.0.0.1:8080".to_string());
     let redis_addr = std::env::var("REDIS_ADDRESS").unwrap_or("127.0.0.1:6379".to_string());
     let root_dir = std::env::var("ROOT_DIR").unwrap_or("../build".to_string());
+    let db_url = std::env::var("DATABASE_URL").unwrap_or("db.sqlite".to_string());
 
     let serve_dir = ServeDir::new(root_dir);
 
     let redis_config = Config::from_url(&format!("redis://{}", redis_addr))
         .expect("Failed to parse redis address");
-    let pool = Builder::from_config(redis_config)
+    let redis_pool = Builder::from_config(redis_config)
         .build_pool(8)
         .expect("Failed to create redis pool");
 
-    pool.init().await.expect("Failed to connect to redis");
+    redis_pool.init().await.expect("Failed to connect to redis");
 
-    let session_store = RedisStore::new(pool);
+    let session_store = RedisStore::new(redis_pool.clone());
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
         .with_expiry(Expiry::OnInactivity(Duration::weeks(4)));
+
+    let manager = ConnectionManager::<SqliteConnection>::new(db_url);
+    let db_pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create db pool.");
+
+    let app_state = AppState {
+        db_pool,
+        redis_pool,
+    };
 
     let app = Router::new()
         // authorization
@@ -50,7 +75,9 @@ async fn main() {
         // static
         .fallback_service(serve_dir)
         // sessions
-        .layer(session_layer);
+        .layer(session_layer)
+        // state
+        .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind(&listen_addr)
         .await

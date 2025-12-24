@@ -14,3 +14,6 @@ tokio = { version = "1.48.0", features = ["rt-multi-thread"] }
 tower-http = { version = "0.6.8", features = ["fs"] }
 tower-sessions = "0.14.0"
 tower-sessions-redis-store = "0.16.0"
+scrypt = { version = "0.11.0", features = ["std", "simple"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.147"

@@ -1,5 +1,8 @@
 use axum::{
-    Router,
+    Json, Router,
+    extract::State,
+    http::StatusCode,
+    response::IntoResponse,
     routing::{delete, get, post, put},
 };
 use diesel::r2d2::{self, ConnectionManager};
@@ -8,9 +11,15 @@ use dotenvy::dotenv;
 use fred::clients::Pool;
 use fred::interfaces::*;
 use fred::types::{Builder, config::Config};
+use scrypt::{
+    Scrypt,
+    password_hash::{PasswordHash, PasswordVerifier},
+};
+use serde::Deserialize;
+use serde_json;
 use time::Duration;
 use tower_http::services::ServeDir;
-use tower_sessions::{Expiry, SessionManagerLayer};
+use tower_sessions::{Expiry, Session, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
@@ -87,44 +96,81 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn login_status() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn login() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn logout() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-
-async fn list_questions() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn add_question() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn delete_all_questions() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn modify_question() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn delete_question() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
-}
-async fn export_questions() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
+async fn login_status(session: Session) -> impl IntoResponse {
+    let logged_in = session
+        .get::<bool>("authenticated")
+        .await
+        .unwrap_or(None)
+        .unwrap_or(false);
+    Json(serde_json::json!({ "loggedIn": logged_in }))
 }
 
-async fn list_surveys() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
+#[derive(Deserialize)]
+struct LoginRequest {
+    password: String,
 }
-async fn add_survey() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
+
+async fn login(
+    State(state): State<AppState>,
+    session: Session,
+    Json(request): Json<LoginRequest>,
+) -> impl IntoResponse {
+    let hashed_password: Option<String> = state
+        .redis_pool
+        .get("nochfragen:password")
+        .await
+        .unwrap_or(None);
+
+    let Some(hashed_password) = hashed_password else {
+        return StatusCode::FORBIDDEN;
+    };
+
+    let Ok(hashed_password) = PasswordHash::new(&hashed_password) else {
+        return StatusCode::FORBIDDEN;
+    };
+
+    match Scrypt.verify_password(request.password.as_bytes(), &hashed_password) {
+        Ok(_) => {
+            session.insert("authenticated", true).await.unwrap();
+            StatusCode::OK
+        }
+        Err(_) => StatusCode::FORBIDDEN,
+    }
 }
-async fn modify_survey() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
+
+async fn logout(session: Session) -> impl IntoResponse {
+    session.insert("authenticated", false).await.unwrap();
+    StatusCode::OK
 }
-async fn delete_survey() -> impl axum::response::IntoResponse {
-    axum::http::StatusCode::SERVICE_UNAVAILABLE
+
+async fn list_questions() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn add_question() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn delete_all_questions() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn modify_question() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn delete_question() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn export_questions() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+
+async fn list_surveys() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn add_survey() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn modify_survey() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
+}
+async fn delete_survey() -> impl IntoResponse {
+    StatusCode::SERVICE_UNAVAILABLE
 }

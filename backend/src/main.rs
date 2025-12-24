@@ -8,7 +8,6 @@ use axum::{
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
-use fred::clients::Pool;
 use fred::interfaces::*;
 use fred::types::{Builder, config::Config};
 use scrypt::{
@@ -22,13 +21,8 @@ use tower_http::services::ServeDir;
 use tower_sessions::{Expiry, Session, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
 
-type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
-
-#[derive(Clone)]
-struct AppState {
-    db_pool: DbPool,
-    redis_pool: Pool,
-}
+use nochfragen::AppState;
+use nochfragen::{questions, surveys};
 
 #[tokio::main]
 async fn main() {
@@ -70,17 +64,17 @@ async fn main() {
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
         // questions
-        .route("/api/questions", get(list_questions))
-        .route("/api/questions", post(add_question))
-        .route("/api/questions", delete(delete_all_questions))
-        .route("/api/question/{id}", put(modify_question))
-        .route("/api/question/{id}", delete(delete_question))
-        .route("/api/export", get(export_questions))
+        .route("/api/questions", get(questions::list_questions))
+        .route("/api/questions", post(questions::add_question))
+        .route("/api/questions", delete(questions::delete_all_questions))
+        .route("/api/question/{id}", put(questions::modify_question))
+        .route("/api/question/{id}", delete(questions::delete_question))
+        .route("/api/export", get(questions::export_questions))
         // surveys
-        .route("/api/surveys", get(list_surveys))
-        .route("/api/surveys", post(add_survey))
-        .route("/api/survey/{id}", put(modify_survey))
-        .route("/api/survey/{id}", delete(delete_survey))
+        .route("/api/surveys", get(surveys::list_surveys))
+        .route("/api/surveys", post(surveys::add_survey))
+        .route("/api/survey/{id}", put(surveys::modify_survey))
+        .route("/api/survey/{id}", delete(surveys::delete_survey))
         // static
         .fallback_service(serve_dir)
         // sessions
@@ -141,36 +135,4 @@ async fn login(
 async fn logout(session: Session) -> impl IntoResponse {
     session.insert("authenticated", false).await.unwrap();
     StatusCode::OK
-}
-
-async fn list_questions() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn add_question() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn delete_all_questions() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn modify_question() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn delete_question() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn export_questions() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-
-async fn list_surveys() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn add_survey() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn modify_survey() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
-}
-async fn delete_survey() -> impl IntoResponse {
-    StatusCode::SERVICE_UNAVAILABLE
 }

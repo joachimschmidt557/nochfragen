@@ -2,14 +2,33 @@ use axum::{
     Router,
     routing::{delete, get, post, put},
 };
+use fred::interfaces::*;
+use fred::types::{Builder, config::Config};
+use time::Duration;
 use tower_http::services::ServeDir;
+use tower_sessions::{Expiry, SessionManagerLayer};
+use tower_sessions_redis_store::RedisStore;
 
 #[tokio::main]
 async fn main() {
     let listen_addr = std::env::var("LISTEN_ADDRESS").unwrap_or("127.0.0.1:8080".to_string());
+    let redis_addr = std::env::var("REDIS_ADDRESS").unwrap_or("127.0.0.1:6379".to_string());
     let root_dir = std::env::var("ROOT_DIR").unwrap_or("../build".to_string());
 
     let serve_dir = ServeDir::new(root_dir);
+
+    let redis_config = Config::from_url(&format!("redis://{}", redis_addr))
+        .expect("Failed to parse redis address");
+    let pool = Builder::from_config(redis_config)
+        .build_pool(8)
+        .expect("Failed to create redis pool");
+
+    pool.init().await.expect("Failed to connect to redis");
+
+    let session_store = RedisStore::new(pool);
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::weeks(4)));
 
     let app = Router::new()
         // authorization
@@ -29,7 +48,9 @@ async fn main() {
         .route("/api/survey/{id}", put(modify_survey))
         .route("/api/survey/{id}", delete(delete_survey))
         // static
-        .fallback_service(serve_dir);
+        .fallback_service(serve_dir)
+        // sessions
+        .layer(session_layer);
 
     let listener = tokio::net::TcpListener::bind(&listen_addr)
         .await

@@ -3,6 +3,8 @@
 zig-out/
 zig-cache/
 
+target/
+
 /.svelte-kit
 /build
 

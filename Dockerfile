@@ -1,9 +1,9 @@
 FROM rust:1.92-alpine AS backend
 
-WORKDIR /app
-COPY backend ./backend
+RUN apk add --no-cache sqlite-dev sqlite-static
 
-WORKDIR /app/backend
+WORKDIR /app
+COPY backend .
 RUN cargo build --release
 
 FROM node:22-alpine3.20 AS frontend
@@ -18,7 +18,11 @@ RUN npm run build
 FROM alpine:3.20 AS app
 
 WORKDIR /app
-COPY --from=backend /app/backend/target/release/backend /app/nochfragen
+COPY --from=backend /app/target/release/backend /app/nochfragen
 COPY --from=frontend /app/build ./build
 
+EXPOSE 8080
+
+ENV ROOT_DIR=build
+ENV LISTEN_ADDRESS=0.0.0.0:8080
 ENTRYPOINT ["/app/nochfragen"]

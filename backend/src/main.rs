@@ -82,6 +82,8 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&listen_addr)
         .await
         .expect("Failed to bind to address");
+
+    println!("Listening on {listen_addr}");
     axum::serve(listener, app).await.unwrap();
 }
 

@@ -2,7 +2,6 @@ use axum::{
     Json, Router,
     extract::State,
     http::StatusCode,
-    response::IntoResponse,
     routing::{delete, get, post, put},
 };
 use diesel::r2d2::{self, ConnectionManager};

@@ -12,6 +12,9 @@
 
     await fetch(`api/surveys`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ text: questionText, options: options })
     })
       .then((response) => {

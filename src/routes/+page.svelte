@@ -153,6 +153,9 @@
 
     await fetch(`api/login`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ password: password })
     })
       .then((response) => {
@@ -385,7 +388,9 @@
       <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>.
 
       <a href={PUBLIC_IMPRINT_URL} rel="external" target="_blank">{$_('app.imprint')}</a>
-      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank">{$_('app.privacy_policy')}</a>
+      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank"
+        >{$_('app.privacy_policy')}</a
+      >
     </p>
   </div>
 </main>

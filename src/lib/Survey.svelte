@@ -18,6 +18,9 @@
   async function submit() {
     await fetch(`api/survey/${item.id}`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ mode: vote, vote: choice, state: hidden })
     }).then(() => {
       item.voted = true;
@@ -27,6 +30,9 @@
   async function show() {
     await fetch(`api/survey/${item.id}`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         mode: modifyState,
         vote: 0,
@@ -38,6 +44,9 @@
   async function hide() {
     await fetch(`api/survey/${item.id}`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         mode: modifyState,
         vote: 0,

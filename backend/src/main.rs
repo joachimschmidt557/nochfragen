@@ -15,14 +15,13 @@ use scrypt::{
     Scrypt,
     password_hash::{PasswordHash, PasswordVerifier},
 };
-use serde::Deserialize;
-use serde_json;
+use serde::{Deserialize, Serialize};
 use time::Duration;
 use tower_http::services::ServeDir;
 use tower_sessions::{Expiry, Session, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
 
-use nochfragen::AppState;
+use nochfragen::{AppResult, AppState};
 use nochfragen::{questions, surveys};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
@@ -98,13 +97,19 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn login_status(session: Session) -> impl IntoResponse {
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LoginStatusResponse {
+    logged_in: bool,
+}
+
+async fn login_status(session: Session) -> Json<LoginStatusResponse> {
     let logged_in = session
         .get::<bool>("authenticated")
         .await
         .unwrap_or(None)
         .unwrap_or(false);
-    Json(serde_json::json!({ "loggedIn": logged_in }))
+    Json(LoginStatusResponse { logged_in })
 }
 
 #[derive(Deserialize)]
@@ -116,7 +121,7 @@ async fn login(
     State(state): State<AppState>,
     session: Session,
     Json(request): Json<LoginRequest>,
-) -> impl IntoResponse {
+) -> AppResult<StatusCode> {
     let hashed_password: Option<String> = state
         .redis_pool
         .get("nochfragen:password")
@@ -124,23 +129,25 @@ async fn login(
         .unwrap_or(None);
 
     let Some(hashed_password) = hashed_password else {
-        return StatusCode::FORBIDDEN;
+        // no password set
+        return Ok(StatusCode::FORBIDDEN);
     };
 
     let Ok(hashed_password) = PasswordHash::new(&hashed_password) else {
-        return StatusCode::FORBIDDEN;
+        // db contains an invalid scrypt hash
+        return Ok(StatusCode::FORBIDDEN);
     };
 
     match Scrypt.verify_password(request.password.as_bytes(), &hashed_password) {
         Ok(_) => {
-            session.insert("authenticated", true).await.unwrap();
-            StatusCode::OK
+            session.insert("authenticated", true).await?;
+            Ok(StatusCode::OK)
         }
-        Err(_) => StatusCode::FORBIDDEN,
+        Err(_) => Ok(StatusCode::FORBIDDEN),
     }
 }
 
-async fn logout(session: Session) -> impl IntoResponse {
-    session.insert("authenticated", false).await.unwrap();
-    StatusCode::OK
+async fn logout(session: Session) -> AppResult<StatusCode> {
+    session.insert("authenticated", false).await?;
+    Ok(StatusCode::OK)
 }

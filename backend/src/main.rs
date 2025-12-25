@@ -7,6 +7,7 @@ use axum::{
 };
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use dotenvy::dotenv;
 use fred::interfaces::*;
 use fred::types::{Builder, config::Config};
@@ -23,6 +24,8 @@ use tower_sessions_redis_store::RedisStore;
 
 use nochfragen::AppState;
 use nochfragen::{questions, surveys};
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 #[tokio::main]
 async fn main() {
@@ -52,6 +55,11 @@ async fn main() {
     let db_pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create db pool.");
+    db_pool
+        .get()
+        .expect("Failed to get a connection from the db pool")
+        .run_pending_migrations(MIGRATIONS)
+        .expect("Failed to run migrations");
 
     let app_state = AppState {
         db_pool,

@@ -4,6 +4,9 @@ use diesel::{
 };
 use fred::clients::Pool;
 
+pub mod models;
+pub mod schema;
+
 pub mod questions;
 pub mod surveys;
 

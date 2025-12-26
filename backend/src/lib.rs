@@ -32,6 +32,12 @@ where
 }
 
 impl IntoResponse for AppErr {
+    #[cfg(debug_assertions)]
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
+    }
+
+    #[cfg(not(debug_assertions))]
     fn into_response(self) -> axum::response::Response {
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }

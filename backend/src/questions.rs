@@ -4,7 +4,6 @@ use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::Response;
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use diesel::prelude::*;
-use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use serde::{Deserialize, Serialize};
 use time::UtcDateTime;
 use time::format_description::well_known::iso8601::TimePrecision;
@@ -12,6 +11,7 @@ use time::format_description::well_known::{Iso8601, iso8601};
 use tower_sessions::Session;
 
 use crate::models::{NewQuestion, Question, QuestionState};
+use crate::schema::questions;
 use crate::{AppResult, AppState};
 
 const MAX_QUESTION_LEN: usize = 500;
@@ -37,14 +37,13 @@ pub async fn list_questions(
         .unwrap_or(None)
         .unwrap_or(false);
 
-    use crate::schema::questions::dsl::*;
     let result = if logged_in {
-        questions
+        questions::table
             .select(Question::as_select())
             .load(&mut connection)
     } else {
-        questions
-            .filter(state.eq_any(vec![
+        questions::table
+            .filter(questions::state.eq_any(vec![
                 QuestionState::Unanswered,
                 QuestionState::Answering,
                 QuestionState::Answered,
@@ -56,17 +55,18 @@ pub async fn list_questions(
     let result: Vec<QuestionResponse> =
         futures::future::join_all(result?.into_iter().map(async |question| {
             let question_id = question.id;
+            let upvoted = session
+                .get::<bool>(&format!("question:{question_id}").to_string())
+                .await
+                .unwrap_or(None)
+                .unwrap_or(false);
 
             QuestionResponse {
                 id: question.id,
                 text: question.text,
                 upvotes: question.upvotes,
                 state: question.state,
-                upvoted: session
-                    .get::<bool>(&format!("question:{question_id}").to_string())
-                    .await
-                    .unwrap_or(None)
-                    .unwrap_or(false),
+                upvoted: upvoted,
             }
         }))
         .await;
@@ -160,9 +160,8 @@ pub async fn modify_question(
             return Ok((StatusCode::FORBIDDEN, "Already upvoted").into_response());
         }
 
-        use crate::schema::questions::dsl::*;
-        diesel::update(questions.find(question_id))
-            .set(upvotes.eq(upvotes + 1))
+        diesel::update(questions::table.find(question_id))
+            .set(questions::upvotes.eq(questions::upvotes + 1))
             .execute(&mut connection)?;
 
         session.insert(&str_id, true).await?;
@@ -178,23 +177,31 @@ pub async fn modify_question(
 
         let current_time: i32 = UtcDateTime::now().unix_timestamp().try_into()?;
 
-        use crate::schema::questions::dsl::*;
         match request.state {
             QuestionState::Hidden | QuestionState::Unanswered | QuestionState::HiddenAnswered => {
-                diesel::update(questions.find(question_id))
-                    .set((state.eq(request.state), modified_at.eq(current_time)))
+                diesel::update(questions::table.find(question_id))
+                    .set((
+                        questions::state.eq(request.state),
+                        questions::modified_at.eq(current_time),
+                    ))
                     .execute(&mut connection)?;
             }
 
             QuestionState::Answering => {
-                diesel::update(questions.find(question_id))
-                    .set((state.eq(request.state), answering_at.eq(current_time)))
+                diesel::update(questions::table.find(question_id))
+                    .set((
+                        questions::state.eq(request.state),
+                        questions::answering_at.eq(current_time),
+                    ))
                     .execute(&mut connection)?;
             }
 
             QuestionState::Answered => {
-                diesel::update(questions.find(question_id))
-                    .set((state.eq(request.state), answered_at.eq(current_time)))
+                diesel::update(questions::table.find(question_id))
+                    .set((
+                        questions::state.eq(request.state),
+                        questions::answered_at.eq(current_time),
+                    ))
                     .execute(&mut connection)?;
             }
         }
@@ -219,8 +226,7 @@ pub async fn delete_question(
         return Ok(StatusCode::FORBIDDEN);
     };
 
-    use crate::schema::questions::dsl::*;
-    diesel::delete(questions.find(question_id)).execute(&mut connection)?;
+    diesel::delete(questions::table.find(question_id)).execute(&mut connection)?;
 
     Ok(StatusCode::OK)
 }
@@ -251,8 +257,7 @@ pub async fn export_questions(
         return Ok(StatusCode::FORBIDDEN.into_response());
     };
 
-    use crate::schema::questions::dsl::*;
-    let result = questions
+    let result = questions::table
         .select(Question::as_select())
         .load(&mut connection)?;
 

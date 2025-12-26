@@ -80,6 +80,7 @@ pub struct Question {
     pub answered_at: i32,
 }
 
+/// Same as Question, just without id
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::questions)]
 pub struct NewQuestion {
@@ -90,4 +91,76 @@ pub struct NewQuestion {
     pub modified_at: i32,
     pub answering_at: i32,
     pub answered_at: i32,
+}
+
+#[repr(i32)]
+#[derive(Serialize_repr, Deserialize_repr, FromSqlRow, Debug, AsExpression)]
+#[diesel(sql_type = Integer)]
+pub enum SurveyState {
+    Hidden = 0,
+    Open = 1,
+}
+
+impl<DB> FromSql<Integer, DB> for SurveyState
+where
+    DB: Backend,
+    i32: FromSql<Integer, DB>,
+{
+    fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
+        match i32::from_sql(bytes)? {
+            0 => Ok(SurveyState::Hidden),
+            1 => Ok(SurveyState::Open),
+            x => Err(format!("Unrecognized variant {}", x).into()),
+        }
+    }
+}
+
+impl<DB> ToSql<Integer, DB> for SurveyState
+where
+    DB: Backend,
+    i32: ToSql<Integer, DB>,
+{
+    fn to_sql<'b>(&'b self, out: &mut serialize::Output<'b, '_, DB>) -> serialize::Result {
+        match self {
+            SurveyState::Hidden => 0.to_sql(out),
+            SurveyState::Open => 1.to_sql(out),
+        }
+    }
+}
+
+#[derive(Serialize, Queryable, Selectable, Identifiable)]
+#[diesel(table_name = crate::schema::surveys)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct Survey {
+    pub id: i32,
+    pub text: String,
+    pub state: SurveyState,
+}
+
+/// Same as Survey, just without id
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::surveys)]
+pub struct NewSurvey {
+    pub text: String,
+    pub state: SurveyState,
+}
+
+#[derive(Serialize, Queryable, Selectable, Associations, Identifiable)]
+#[diesel(belongs_to(Survey, foreign_key = survey))]
+#[diesel(table_name = crate::schema::survey_options)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct SurveyOption {
+    pub id: i32,
+    pub survey: i32,
+    pub text: String,
+    pub votes: i32,
+}
+
+/// same as SurveyOption, just without id
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::survey_options)]
+pub struct NewSurveyOption {
+    pub survey: i32,
+    pub text: String,
+    pub votes: i32,
 }

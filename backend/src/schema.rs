@@ -12,3 +12,24 @@ diesel::table! {
         answered_at -> Integer,
     }
 }
+
+diesel::table! {
+    survey_options (id) {
+        id -> Integer,
+        survey -> Integer,
+        text -> Text,
+        votes -> Integer,
+    }
+}
+
+diesel::table! {
+    surveys (id) {
+        id -> Integer,
+        text -> Text,
+        state -> Integer,
+    }
+}
+
+diesel::joinable!(survey_options -> surveys (survey));
+
+diesel::allow_tables_to_appear_in_same_query!(questions, survey_options, surveys,);

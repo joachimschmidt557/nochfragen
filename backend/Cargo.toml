@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 axum = "0.8.8"
-diesel = { version = "2.3.5", features = ["sqlite", "r2d2"] }
+diesel = { version = "2.3.5", features = ["sqlite", "r2d2", "returning_clauses_for_sqlite_3_35"] }
 dotenvy = "0.15.7"
 fred = "10.1.0"
 time = "0.3.44"

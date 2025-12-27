@@ -3,7 +3,13 @@ use diesel::{
     SqliteConnection,
     r2d2::{self, ConnectionManager},
 };
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use fred::clients::Pool;
+use fred::interfaces::*;
+use fred::types::{Builder, config::Config};
+use time::Duration;
+use tower_sessions::{Expiry, SessionManagerLayer};
+use tower_sessions_redis_store::RedisStore;
 
 pub mod models;
 pub mod schema;
@@ -41,4 +47,44 @@ impl IntoResponse for AppErr {
     fn into_response(self) -> axum::response::Response {
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }
+}
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+
+pub async fn connect_redis() -> Pool {
+    let redis_addr = std::env::var("REDIS_ADDRESS").unwrap_or("127.0.0.1:6379".to_string());
+
+    let redis_config = Config::from_url(&format!("redis://{}", redis_addr))
+        .expect("Failed to parse redis address");
+    let redis_pool = Builder::from_config(redis_config)
+        .build_pool(8)
+        .expect("Failed to create redis pool");
+
+    redis_pool.init().await.expect("Failed to connect to redis");
+
+    redis_pool
+}
+
+pub fn connect_db() -> DbPool {
+    let db_url = std::env::var("DATABASE_URL").unwrap_or("db.sqlite".to_string());
+
+    let manager = ConnectionManager::<SqliteConnection>::new(db_url);
+    let db_pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create db pool.");
+    db_pool
+        .get()
+        .expect("Failed to get a connection from the db pool")
+        .run_pending_migrations(MIGRATIONS)
+        .expect("Failed to run migrations");
+
+    db_pool
+}
+
+pub fn create_session_layer(redis_pool: Pool) -> SessionManagerLayer<RedisStore<Pool>> {
+    let session_store = RedisStore::new(redis_pool.clone());
+
+    SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::weeks(4)))
 }

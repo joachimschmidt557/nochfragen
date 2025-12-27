@@ -9,27 +9,37 @@ A small web app for asking and moderating questions
 Questions can be submitted by any user. Initially, questions are
 hidden for non-moderators. Moderators can make hidden questions
 visible and can hide visible questions. In addition, moderators can
-also delete questions, making them hidden for everyone.
+also delete questions.
 
 Any user can upvote a question, but a session cannot give more than
 one upvote for a single question.
 
-`nochfragen` uses redis as an emphemeral storage backend.
+`nochfragen` stores questions and surveys in an SQLite database and
+keeps track of sessions in Redis.
 
 ## Development
 
 ### Backend
 
-The backend requires zig 0.10.1 and a recent version of gyro (git rev
-`19cf64d` was confirmed to work).
+The backend is implemented in the `backend` directory.
+
+A recent stable rust toolchain is required. The SQLite (development)
+library is also required on your system. The exact name of this
+package varies in every distribution/package ecosystem.
+
+The `nochfragen` main executable provides the backend API routes under
+`/api/` and also serves frontend content from `$ROOT_DIR` (defaults to
+`../build`).
 
 ```
-gyro build
+cargo run
 ```
 
 ### Frontend
 
-Set up an example `.env` file for the build:
+The frontend is written in Svelte and requires the nodejs toolchain.
+
+First, set up an example `.env` file for the build:
 
 ```
 cp .env.example .env
@@ -42,49 +52,29 @@ npm i
 npm run build
 ```
 
-## Usage
-
-```
-Usage: nochfragen [-h] [--listen-address <IP:PORT>] [--redis-address <IP:PORT>] [--sqlite-db <PATH>] [--root-dir <PATH>]
-
-Options:
-
-    -h, --help
-            Display this help and exit.
-
-        --listen-address <IP:PORT>
-            Address to listen for connections
-
-        --redis-address <IP:PORT>
-            Address to connect to redis
-
-        --sqlite-db <PATH>
-            Path to the SQLite database
-
-        --root-dir <PATH>
-            Path to the static HTML, CSS and JS content
-
-```
-
 ## Configuration
 
+`nochfragen` is configured with environment variables:
+
+| Environment variable | Default          | Description              |
+|----------------------|------------------|--------------------------|
+| `$LISTEN_ADDRESS`    | `127.0.0.1:8080` | Address to listen on     |
+| `$REDIS_ADDRESS`     | `127.0.0.1:6379` | Redis connection address |
+| `$DATABASE_URL`      | `db.sqlite`      | Path to SQLite database  |
+| `$ROOT_DIR`          | `../build`       | Path to frontend build   |
+
 The `nochfragenctl` command-line utility is designed to configure a
-(possibly runnig) nochfragen server.
+(possibly running) nochfragen server.
 
 ```
-Usage: nochfragenctl [-h] [--set-password <PASS>] [--redis-address <IP:PORT>]
+Usage: nochfragenctl <COMMAND>
+
+Commands:
+  set-password  Change the moderation password
+  help          Print this message or the help of the given subcommand(s)
 
 Options:
-
-    -h, --help
-            Display this help and exit.
-
-        --set-password <PASS>
-            Set a new password and exit
-
-        --redis-address <IP:PORT>
-            Address to connect to redis
-
+  -h, --help  Print help
 ```
 
 ## License

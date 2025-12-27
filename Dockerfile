@@ -1,17 +1,10 @@
-FROM alpine:3.20 AS backend
+FROM rust:1.92-alpine AS backend
 
-RUN apk add --no-cache curl
-
-RUN curl -LS https://github.com/mattnite/gyro/releases/download/0.7.0/gyro-0.7.0-linux-x86_64.tar.gz | tar xz
-
-RUN curl -LS https://ziglang.org/download/0.10.1/zig-linux-x86_64-0.10.1.tar.xz | tar xJ
+RUN apk add --no-cache sqlite-dev sqlite-static
 
 WORKDIR /app
-COPY backend ./backend
-COPY build.zig gyro.lock gyro.zzz ./
-
-RUN /gyro-0.7.0-linux-x86_64/bin/gyro fetch
-RUN /zig-linux-x86_64-0.10.1/zig build -Drelease-safe
+COPY backend .
+RUN cargo build --release
 
 FROM node:22-alpine3.20 AS frontend
 
@@ -25,7 +18,11 @@ RUN npm run build
 FROM alpine:3.20 AS app
 
 WORKDIR /app
-COPY --from=backend /app/zig-out/bin/nochfragen .
+COPY --from=backend /app/target/release/nochfragen /app/nochfragen
 COPY --from=frontend /app/build ./build
 
+EXPOSE 8080
+
+ENV ROOT_DIR=build
+ENV LISTEN_ADDRESS=0.0.0.0:8080
 ENTRYPOINT ["/app/nochfragen"]

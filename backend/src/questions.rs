@@ -66,7 +66,7 @@ pub async fn list_questions(
                 text: question.text,
                 upvotes: question.upvotes,
                 state: question.state,
-                upvoted: upvoted,
+                upvoted,
             }
         }))
         .await;
@@ -87,7 +87,7 @@ pub async fn add_question(
 
     let text = request.text;
 
-    if text.len() == 0 {
+    if text.is_empty() {
         return Ok((StatusCode::BAD_REQUEST, "Empty question").into_response());
     }
 
@@ -279,7 +279,7 @@ pub async fn export_questions(
             Ok(Self {
                 text: question.text,
                 upvotes: question.upvotes,
-                state: question.state.to_string(),
+                state: question.state.to_csv_export_name(),
                 created_at: unix_timestamp_to_str(question.created_at)?,
                 modified_at: unix_timestamp_to_str(question.modified_at)?,
                 answering_at: unix_timestamp_to_str(question.answering_at)?,

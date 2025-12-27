@@ -21,7 +21,7 @@ pub enum QuestionState {
 }
 
 impl QuestionState {
-    pub fn to_string(self) -> String {
+    pub fn to_csv_export_name(self) -> String {
         match self {
             QuestionState::Hidden => "hidden",
             QuestionState::Unanswered => "unanswered",

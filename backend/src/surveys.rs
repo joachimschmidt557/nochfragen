@@ -90,7 +90,7 @@ pub async fn list_surveys(
                         id: survey_id,
                         text: survey.text,
                         state: survey.state,
-                        voted: voted,
+                        voted,
                     },
                     options: options
                         .into_iter()
@@ -123,7 +123,7 @@ pub async fn add_survey(
     let text = request.text;
     let options = request.options;
 
-    if text.len() == 0 {
+    if text.is_empty() {
         return Ok((StatusCode::BAD_REQUEST, "Empty question").into_response());
     }
 
@@ -131,7 +131,7 @@ pub async fn add_survey(
         return Ok((StatusCode::BAD_REQUEST, "Maximum question length exceeded").into_response());
     }
 
-    if options.len() == 0 {
+    if options.is_empty() {
         return Ok((StatusCode::BAD_REQUEST, "No options provided").into_response());
     }
 

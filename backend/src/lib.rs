@@ -84,7 +84,5 @@ pub fn connect_db() -> DbPool {
 pub fn create_session_layer(redis_pool: Pool) -> SessionManagerLayer<RedisStore<Pool>> {
     let session_store = RedisStore::new(redis_pool.clone());
 
-    SessionManagerLayer::new(session_store)
-        .with_secure(false)
-        .with_expiry(Expiry::OnInactivity(Duration::weeks(4)))
+    SessionManagerLayer::new(session_store).with_expiry(Expiry::OnInactivity(Duration::weeks(4)))
 }

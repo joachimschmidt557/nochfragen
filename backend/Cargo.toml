@@ -3,6 +3,7 @@ name = "nochfragen"
 version = "0.1.0"
 edition = "2024"
 publish = false
+default-run = "nochfragen"
 
 [dependencies]
 axum = "0.8.8"

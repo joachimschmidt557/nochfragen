@@ -20,6 +20,6 @@ serde = { version = "1.0.228", features = ["derive"] }
 diesel_migrations = "2.3.1"
 serde_repr = "0.1.20"
 anyhow = "1.0.102"
-futures = "0.3.31"
+futures = "0.3.32"
 csv = "1.4.0"
 clap = { version = "4.5.60", features = ["derive"] }

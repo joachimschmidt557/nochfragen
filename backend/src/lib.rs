@@ -7,6 +7,7 @@ use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use fred::clients::Pool;
 use fred::interfaces::*;
 use fred::types::{Builder, config::Config};
+use scrypt::password_hash::PasswordHashString;
 use time::Duration;
 use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
@@ -23,6 +24,7 @@ type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 pub struct AppState {
     pub db_pool: DbPool,
     pub redis_pool: Pool,
+    pub hashed_password: PasswordHashString,
 }
 
 pub struct AppErr(anyhow::Error);

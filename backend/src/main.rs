@@ -5,10 +5,9 @@ use axum::{
     routing::{delete, get, post, put},
 };
 use dotenvy::dotenv;
-use fred::interfaces::*;
 use scrypt::{
     Scrypt,
-    password_hash::{PasswordHash, PasswordVerifier},
+    password_hash::{PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
@@ -49,9 +48,16 @@ async fn main() {
     let db_pool = connect_db();
     let session_layer = create_session_layer(redis_pool.clone());
 
+    let salt = SaltString::generate(&mut OsRng);
+    let password = std::env::var("NOCHFRAGEN_PASSWORD")
+        .expect("set NOCHFRAGEN_PASSWORD environment variable with the moderation password");
     let app_state = AppState {
         db_pool,
         redis_pool,
+        hashed_password: Scrypt
+            .hash_password(password.as_bytes(), &salt)
+            .expect("failed to hash password")
+            .serialize(),
     };
 
     let app = app()
@@ -96,23 +102,10 @@ async fn login(
     session: Session,
     Json(request): Json<LoginRequest>,
 ) -> AppResult<StatusCode> {
-    let hashed_password: Option<String> = state
-        .redis_pool
-        .get("nochfragen:password")
-        .await
-        .unwrap_or(None);
-
-    let Some(hashed_password) = hashed_password else {
-        // no password set
-        return Ok(StatusCode::FORBIDDEN);
-    };
-
-    let Ok(hashed_password) = PasswordHash::new(&hashed_password) else {
-        // db contains an invalid scrypt hash
-        return Ok(StatusCode::FORBIDDEN);
-    };
-
-    match Scrypt.verify_password(request.password.as_bytes(), &hashed_password) {
+    match Scrypt.verify_password(
+        request.password.as_bytes(),
+        &state.hashed_password.password_hash(),
+    ) {
         Ok(_) => {
             session.insert("authenticated", true).await?;
             Ok(StatusCode::OK)

@@ -56,26 +56,13 @@ npm run build
 
 `nochfragen` is configured with environment variables:
 
-| Environment variable | Default          | Description              |
-|----------------------|------------------|--------------------------|
-| `$LISTEN_ADDRESS`    | `127.0.0.1:8080` | Address to listen on     |
-| `$REDIS_ADDRESS`     | `127.0.0.1:6379` | Redis connection address |
-| `$DATABASE_URL`      | `db.sqlite`      | Path to SQLite database  |
-| `$ROOT_DIR`          | `../build`       | Path to frontend build   |
-
-The `nochfragenctl` command-line utility is designed to configure a
-(possibly running) nochfragen server.
-
-```
-Usage: nochfragenctl <COMMAND>
-
-Commands:
-  set-password  Change the moderation password
-  help          Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help  Print help
-```
+| Environment variable   | Default          | Description              |
+|------------------------|------------------|--------------------------|
+| `$NOCHFRAGEN_PASSWORD` | None             | Moderation password      |
+| `$LISTEN_ADDRESS`      | `127.0.0.1:8080` | Address to listen on     |
+| `$REDIS_ADDRESS`       | `127.0.0.1:6379` | Redis connection address |
+| `$DATABASE_URL`        | `db.sqlite`      | Path to SQLite database  |
+| `$ROOT_DIR`            | `../build`       | Path to frontend build   |
 
 ## License
 

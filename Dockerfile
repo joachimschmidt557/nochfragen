@@ -15,7 +15,7 @@ COPY package.json package-lock.json svelte.config.js vite.config.js .env ./
 RUN npm i
 RUN npm run build
 
-FROM alpine:3.20 AS app
+FROM alpine:3.23 AS app
 
 WORKDIR /app
 COPY --from=backend /app/target/release/nochfragen /app/nochfragen

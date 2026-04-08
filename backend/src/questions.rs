@@ -28,7 +28,7 @@ pub struct QuestionResponse {
 pub async fn list_questions(
     State(app_state): State<AppState>,
     session: Session,
-) -> AppResult<Json<Vec<QuestionResponse>>> {
+) -> AppResult<Response> {
     let mut connection = app_state.db_pool.get()?;
 
     let logged_in = session
@@ -71,7 +71,7 @@ pub async fn list_questions(
         }))
         .await;
 
-    Ok(Json(result))
+    Ok(([(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")], Json(result)).into_response())
 }
 
 #[derive(Deserialize)]

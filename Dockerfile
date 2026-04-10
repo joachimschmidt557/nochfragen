@@ -6,7 +6,7 @@ WORKDIR /app
 COPY backend .
 RUN cargo build --release
 
-FROM node:22-alpine3.20 AS frontend
+FROM node:25-alpine AS frontend
 
 WORKDIR /app
 COPY src ./src

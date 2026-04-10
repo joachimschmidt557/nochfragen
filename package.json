@@ -22,7 +22,7 @@
     "bootstrap": "^5.3.8",
     "prettier": "^3.8.2",
     "prettier-plugin-svelte": "^3.5.1",
-    "svelte": "^5.55.1",
+    "svelte": "^5.55.3",
     "svelte-i18n": "^4.0.1",
     "vite": "^8.0.8"
   }

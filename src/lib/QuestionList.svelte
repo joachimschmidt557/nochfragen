@@ -1,11 +1,11 @@
 <script>
-  import Item from '$lib/Item.svelte';
+  import Question from '$lib/Question.svelte';
 
   let { items, loggedIn } = $props();
 </script>
 
 {#if items}
   {#each items as item (item.id)}
-    <Item {item} {loggedIn} />
+    <Question {item} {loggedIn} />
   {/each}
 {/if}

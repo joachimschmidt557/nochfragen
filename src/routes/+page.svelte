@@ -3,10 +3,10 @@
   import { onMount } from 'svelte';
   import { _, init, addMessages, getLocaleFromNavigator } from 'svelte-i18n';
 
-  import Ask from '$lib/Ask.svelte';
-  import List from '$lib/List.svelte';
-  import SurveyList from '$lib/SurveyList.svelte';
+  import CreateQuestion from '$lib/CreateQuestion.svelte';
+  import QuestionList from '$lib/QuestionList.svelte';
   import CreateSurvey from '$lib/CreateSurvey.svelte';
+  import SurveyList from '$lib/SurveyList.svelte';
 
   import Export from '$lib/modals/Export.svelte';
 
@@ -359,15 +359,15 @@
     </ul>
 
     <ul class="list-group">
-      <Ask success={submitSuccess} error={submitError} />
-      <List {items} {loggedIn} />
+      <CreateQuestion success={submitSuccess} error={submitError} />
+      <QuestionList {items} {loggedIn} />
     </ul>
 
     {#if answeredItems.length > 0}
       <div class="mt-3">
         {$_('app.questions.answered')}
         <ul class="list-group">
-          <List items={answeredItems} {loggedIn} />
+          <QuestionList items={answeredItems} {loggedIn} />
         </ul>
       </div>
     {/if}
@@ -376,7 +376,7 @@
       <div class="mt-3">
         {$_('app.questions.hidden')}
         <ul class="list-group">
-          <List items={hiddenItems} {loggedIn} />
+          <QuestionList items={hiddenItems} {loggedIn} />
         </ul>
       </div>
     {/if}
@@ -385,7 +385,7 @@
       <div class="mt-3">
         Hidden and Answered
         <ul class="list-group">
-          <List items={hiddenAnsweredItems} {loggedIn} />
+          <QuestionList items={hiddenAnsweredItems} {loggedIn} />
         </ul>
       </div>
     {/if}

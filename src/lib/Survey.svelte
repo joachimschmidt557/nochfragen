@@ -22,9 +22,9 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ mode: vote, vote: choice, state: hidden })
-    }).then(() => {
-      item.voted = true;
     });
+
+    item.voted = true;
   }
 
   async function show() {
@@ -38,7 +38,9 @@
         vote: 0,
         state: visible
       })
-    }).then(() => (item.state = visible));
+    });
+
+    item.state = visible;
   }
 
   async function hide() {
@@ -52,13 +54,17 @@
         vote: 0,
         state: hidden
       })
-    }).then(() => (item.state = hidden));
+    });
+
+    item.state = hidden;
   }
 
   async function del() {
     await fetch(`api/survey/${item.id}`, {
       method: 'DELETE'
-    }).then(() => (deleted = true));
+    });
+
+    deleted = true;
   }
 
   function calcPercent(votes) {

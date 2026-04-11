@@ -10,30 +10,32 @@
   async function submitQuestion(ev) {
     ev.preventDefault();
 
-    await fetch(`api/surveys`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ text: questionText, options: options })
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            $_('response.error.surveys.serverreturn', {
-              values: {
-                status: response.status,
-                statusText: response.statusText
-              }
-            })
-          );
-        }
+    try {
+      const response = await fetch(`api/surveys`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: questionText, options: options })
+      });
 
-        questionText = '';
-        options = [];
-        success();
-      })
-      .catch((e) => error(e));
+      if (!response.ok) {
+        throw new Error(
+          $_('response.error.surveys.serverreturn', {
+            values: {
+              status: response.status,
+              statusText: response.statusText
+            }
+          })
+        );
+      }
+
+      questionText = '';
+      options = [];
+      success();
+    } catch (e) {
+      error(e);
+    }
   }
 
   function addOption() {

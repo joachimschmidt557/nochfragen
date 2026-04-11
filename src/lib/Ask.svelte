@@ -8,29 +8,31 @@
   async function submitQuestion(ev) {
     ev.preventDefault();
 
-    await fetch(`api/questions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ text: questionText })
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            $_('response.error.ask.serverreturn', {
-              values: {
-                status: response.status,
-                statusText: response.statusText
-              }
-            })
-          );
-        }
+    try {
+      const response = await fetch('api/questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: questionText })
+      });
 
-        questionText = '';
-        success();
-      })
-      .catch((e) => error(e));
+      if (!response.ok) {
+        throw new Error(
+          $_('response.error.ask.serverreturn', {
+            values: {
+              status: response.status,
+              statusText: response.statusText
+            }
+          })
+        );
+      }
+
+      questionText = '';
+      success();
+    } catch (e) {
+      error(e);
+    }
   }
 </script>
 

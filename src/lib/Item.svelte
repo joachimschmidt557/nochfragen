@@ -18,10 +18,10 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ upvote: true, state: 0 })
-    }).then(() => {
-      item.upvotes += 1;
-      item.upvoted = true;
     });
+
+    item.upvotes += 1;
+    item.upvoted = true;
   }
 
   async function changeState(state) {
@@ -31,13 +31,17 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ upvote: false, state: state })
-    }).then(() => (item.state = state));
+    });
+
+    item.state = state;
   }
 
   async function deleteQuestion() {
     await fetch(`api/question/${item.id}`, {
       method: 'DELETE'
-    }).then(() => (deleted = true));
+    });
+
+    deleted = true;
   }
 </script>
 

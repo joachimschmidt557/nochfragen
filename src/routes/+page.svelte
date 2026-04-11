@@ -4,7 +4,6 @@
   import { _, init, addMessages, getLocaleFromNavigator } from 'svelte-i18n';
 
   import Ask from '$lib/Ask.svelte';
-  import Item from '$lib/Item.svelte';
   import List from '$lib/List.svelte';
   import SurveyList from '$lib/SurveyList.svelte';
   import CreateSurvey from '$lib/CreateSurvey.svelte';
@@ -96,125 +95,133 @@
 
   async function updateQuestionsAndSurveys() {
     updating = true;
-    await Promise.all([fetch(`api/questions`), fetch(`api/surveys`)])
-      .then(async ([questions, surveys]) => {
-        connected = true;
 
-        if (!questions.ok) {
-          throw new ServerError($_('response.error.question.general'), statusCode);
-        }
-        if (!surveys.ok) {
-          throw new ServerError($_('response.error.survey.general'), statusCode);
-        }
+    try {
+      const [questionsResponse, surveysResponse] = await Promise.all([
+        fetch(`api/questions`),
+        fetch(`api/surveys`)
+      ]);
 
-        return [await questions.json(), await surveys.json()];
-      })
-      .then(([questions, surveys]) => {
-        const hidden = 0;
-        const answered = 3;
-        const hiddenAnswered = 4;
+      connected = true;
 
-        questions.sort(questionOrder);
-        items = questions.filter(
-          (x) => x.state !== answered && x.state !== hidden && x.state !== hiddenAnswered
-        );
-        answeredItems = questions.filter((x) => x.state === answered);
-        hiddenItems = questions.filter((x) => x.state === hidden);
-        hiddenAnsweredItems = questions.filter((x) => x.state === hiddenAnswered);
-        surveyItems = surveys;
+      if (!questionsResponse.ok) {
+        throw new ServerError($_('response.error.question.general'), statusCode);
+      }
+      if (!surveysResponse.ok) {
+        throw new ServerError($_('response.error.survey.general'), statusCode);
+      }
 
-        updating = false;
-      })
-      .catch((error) => {
-        if (error instanceof ServerError) {
-          alertDanger = error;
-        } else {
-          // initial fetch failed
-          connected = false;
-        }
+      const [questions, surveys] = [await questionsResponse.json(), await surveysResponse.json()];
 
-        updating = false;
-      });
+      const hidden = 0;
+      const answered = 3;
+      const hiddenAnswered = 4;
+
+      questions.sort(questionOrder);
+      items = questions.filter(
+        (x) => x.state !== answered && x.state !== hidden && x.state !== hiddenAnswered
+      );
+      answeredItems = questions.filter((x) => x.state === answered);
+      hiddenItems = questions.filter((x) => x.state === hidden);
+      hiddenAnsweredItems = questions.filter((x) => x.state === hiddenAnswered);
+      surveyItems = surveys;
+
+      updating = false;
+    } catch (error) {
+      if (error instanceof ServerError) {
+        alertDanger = error;
+      } else {
+        // initial fetch failed
+        connected = false;
+      }
+
+      updating = false;
+    }
   }
 
   async function getLoginStatus() {
-    await fetch(`api/login`)
-      .then((response) => response.json())
-      .then((data) => {
-        loggedIn = data.loggedIn;
-      })
-      .catch((error) => {
-        alertDanger = error;
-      });
+    try {
+      const response = await fetch(`api/login`);
+      const data = await response.json();
+      loggedIn = data.loggedIn;
+    } catch (error) {
+      alertDanger = error;
+    }
   }
 
   async function login(ev) {
     ev.preventDefault();
 
-    await fetch(`api/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ password: password })
-    })
-      .then((response) => {
-        if (response.status === 403) {
-          throw new Error($_('response.error.password'));
-        } else if (!response.ok) {
-          throw new Error(
-            $_('response.error.login.serverreturn', {
-              values: {
-                status: response.status,
-                statusText: response.statusText
-              }
-            })
-          );
-        }
+    try {
+      const response = await fetch(`api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: password })
+      });
 
-        loggedIn = true;
-        passwordModalAlert = '';
-        password = '';
-
-        var loginModal = bootstrap.Modal.getOrCreateInstance(
-          document.getElementById('loginModal'),
-          {}
+      if (response.status === 403) {
+        throw new Error($_('response.error.password'));
+      } else if (!response.ok) {
+        throw new Error(
+          $_('response.error.login.serverreturn', {
+            values: {
+              status: response.status,
+              statusText: response.statusText
+            }
+          })
         );
-        loginModal.hide();
-        updateQuestionsAndSurveys();
-      })
-      .catch((error) => (passwordModalAlert = error));
+      }
+
+      loggedIn = true;
+      passwordModalAlert = '';
+      password = '';
+
+      var loginModal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById('loginModal'),
+        {}
+      );
+      loginModal.hide();
+      updateQuestionsAndSurveys();
+    } catch (error) {
+      passwordModalAlert = error;
+    }
   }
 
   async function logout() {
-    await fetch(`api/logout`, { method: 'POST' })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error($_('response.error.passwordlogout'));
-        }
+    try {
+      const response = await fetch(`api/logout`, { method: 'POST' });
 
-        loggedIn = false;
-        updateQuestionsAndSurveys();
-      })
-      .catch((error) => (alertDanger = error));
+      if (!response.ok) {
+        throw new Error($_('response.error.passwordlogout'));
+      }
+
+      loggedIn = false;
+      updateQuestionsAndSurveys();
+    } catch (error) {
+      alertDanger = error;
+    }
   }
 
   async function deleteAllQuestions() {
-    await fetch(`api/questions`, { method: 'DELETE' })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error($_('response.error.question.deleteall'));
-        }
+    try {
+      const response = await fetch(`api/questions`, { method: 'DELETE' });
 
-        items = [];
-        deleteModalAlert = '';
-        var deleteModal = bootstrap.Modal.getOrCreateInstance(
-          document.getElementById('deleteModal'),
-          {}
-        );
-        deleteModal.hide();
-      })
-      .catch((error) => (deleteModalAlert = error));
+      if (!response.ok) {
+        throw new Error($_('response.error.question.deleteall'));
+      }
+
+      items = [];
+      deleteModalAlert = '';
+      var deleteModal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById('deleteModal'),
+        {}
+      );
+      deleteModal.hide();
+    } catch (error) {
+      deleteModalAlert = error;
+    }
   }
 
   async function submitSuccess() {

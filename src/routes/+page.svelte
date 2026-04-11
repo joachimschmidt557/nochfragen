@@ -1,7 +1,9 @@
-<script>
+<script lang="ts">
   import * as bootstrap from 'bootstrap';
   import { onMount } from 'svelte';
   import { _, init, addMessages, getLocaleFromNavigator } from 'svelte-i18n';
+
+  import type { Question, Survey } from '$lib/types';
 
   import CreateQuestion from '$lib/CreateQuestion.svelte';
   import QuestionList from '$lib/QuestionList.svelte';
@@ -52,11 +54,11 @@
   let updating = $state(true);
   let loggedIn = $state(false);
 
-  let items = $state([]);
-  let answeredItems = $state([]);
-  let hiddenItems = $state([]);
-  let hiddenAnsweredItems = $state([]);
-  let surveyItems = $state([]);
+  let items: Question[] = $state([]);
+  let answeredItems: Question[] = $state([]);
+  let hiddenItems: Question[] = $state([]);
+  let hiddenAnsweredItems: Question[] = $state([]);
+  let surveyItems: Survey[] = $state([]);
 
   let connected = $state(true);
   let password = $state('');
@@ -66,7 +68,9 @@
   let alertDanger = $state('');
 
   class ServerError extends Error {
-    constructor(message, statusCode) {
+    statusCode: number;
+
+    constructor(message: string, statusCode: number) {
       super(message);
       this.statusCode = statusCode;
     }
@@ -77,7 +81,7 @@
     setTimeout(poll, 3000);
   }
 
-  function questionOrder(a, b) {
+  function questionOrder(a: Question, b: Question) {
     const answering = 2;
     const answered = 3;
 
@@ -106,13 +110,16 @@
       connected = true;
 
       if (!questionsResponse.ok) {
-        throw new ServerError($_('response.error.question.general'), statusCode);
+        throw new ServerError($_('response.error.question.general'), questionsResponse.status);
       }
       if (!surveysResponse.ok) {
-        throw new ServerError($_('response.error.survey.general'), statusCode);
+        throw new ServerError($_('response.error.survey.general'), surveysResponse.status);
       }
 
-      const [questions, surveys] = [await questionsResponse.json(), await surveysResponse.json()];
+      const [questions, surveys] = [
+        (await questionsResponse.json()) as Question[],
+        (await surveysResponse.json()) as Survey[]
+      ];
 
       const hidden = 0;
       const answered = 3;
@@ -130,7 +137,7 @@
       updating = false;
     } catch (error) {
       if (error instanceof ServerError) {
-        alertDanger = error;
+        alertDanger = error.message;
       } else {
         // initial fetch failed
         connected = false;
@@ -146,11 +153,11 @@
       const data = await response.json();
       loggedIn = data.loggedIn;
     } catch (error) {
-      alertDanger = error;
+      alertDanger = `${error}`;
     }
   }
 
-  async function login(ev) {
+  async function login(ev: SubmitEvent) {
     ev.preventDefault();
 
     try {
@@ -186,7 +193,7 @@
       loginModal.hide();
       updateQuestionsAndSurveys();
     } catch (error) {
-      passwordModalAlert = error;
+      passwordModalAlert = `${error}`;
     }
   }
 
@@ -201,7 +208,7 @@
       loggedIn = false;
       updateQuestionsAndSurveys();
     } catch (error) {
-      alertDanger = error;
+      alertDanger = `${error}`;
     }
   }
 
@@ -221,7 +228,7 @@
       );
       deleteModal.hide();
     } catch (error) {
-      deleteModalAlert = error;
+      deleteModalAlert = `${error}`;
     }
   }
 
@@ -230,9 +237,9 @@
     await updateQuestionsAndSurveys();
   }
 
-  function submitError(error) {
+  function submitError(detail: string) {
     alertDanger = $_('response.error.question.submit', {
-      values: { detail: error }
+      values: { detail }
     });
   }
 
@@ -244,22 +251,11 @@
     alertDanger = '';
   }
 
-  function translateAlertDanger(error) {
-    console.log(error.message);
-    switch (error.message) {
-      case 'NetworkError when attempting to fetch resource.':
-        return 'response.error.type.network';
-      default:
-        // Could not translate in this case
-        return 'response.error.type.network';
-    }
-  }
-
   // Source https://dev.to/jorik/country-code-to-flag-emoji-a21
-  function getFlagEmoji(countryCode) {
+  function getFlagEmoji(countryCode: string) {
     return countryCode
       .toUpperCase()
-      .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt()));
+      .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
   }
 </script>
 
@@ -269,17 +265,10 @@
     <span class="ms-auto">
       <select class="form-select" bind:value={selected} onchange={switchLanguage}>
         {#each languages as lang}
-          {#if lang.id === 0}
-            <option value={lang.id} selected="selected">
-              {getFlagEmoji(lang.locale)}
-              {lang.text}
-            </option>
-          {:else}
-            <option value={lang.id} selected="">
-              {getFlagEmoji(lang.locale)}
-              {lang.text}
-            </option>
-          {/if}
+          <option value={lang.id}>
+            {getFlagEmoji(lang.locale)}
+            {lang.text}
+          </option>
         {/each}
       </select>
     </span>
@@ -307,7 +296,7 @@
 
     {#if alertDanger !== ''}
       <div class="alert alert-danger alert-dismissible" role="alert">
-        {$_(translateAlertDanger(alertDanger))}
+        {alertDanger}
         <button onclick={dismissAlertDanger} type="button" class="btn-close" aria-label="Close"
         ></button>
       </div>
@@ -353,7 +342,8 @@
 
     <ul class="list-group pb-2">
       {#if loggedIn}
-        <CreateSurvey />
+        <!-- TODO handle success and error -->
+        <CreateSurvey success={() => {}} error={() => {}} />
       {/if}
       <SurveyList {surveyItems} {loggedIn} />
     </ul>

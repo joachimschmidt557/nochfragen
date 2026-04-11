@@ -1,11 +1,17 @@
-<script>
-  import Survey from '$lib/Survey.svelte';
+<script lang="ts">
+  import SurveyComponent from '$lib/Survey.svelte';
+  import type { Survey } from './types';
 
-  let { surveyItems, loggedIn } = $props();
+  interface Props {
+    surveyItems: Survey[];
+    loggedIn: boolean;
+  }
+
+  let { surveyItems, loggedIn }: Props = $props();
 </script>
 
 {#if surveyItems}
   {#each surveyItems as item (item.id)}
-    <Survey {item} {loggedIn} />
+    <SurveyComponent {item} {loggedIn} />
   {/each}
 {/if}

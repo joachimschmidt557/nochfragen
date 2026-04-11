@@ -1,7 +1,13 @@
-<script>
-  import { _, t, format } from 'svelte-i18n';
+<script lang="ts">
+  import { _ } from 'svelte-i18n';
+  import type { Survey } from './types';
 
-  let { item = $bindable(), loggedIn } = $props();
+  interface Props {
+    item: Survey;
+    loggedIn: boolean;
+  }
+
+  let { item = $bindable(), loggedIn }: Props = $props();
 
   let choice = $state(-1);
 
@@ -67,7 +73,7 @@
     deleted = true;
   }
 
-  function calcPercent(votes) {
+  function calcPercent(votes: number) {
     const p = total > 0 ? (votes / total) * 100 : 0;
     return `${p}%`;
   }

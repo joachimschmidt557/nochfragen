@@ -1,7 +1,13 @@
-<script>
-  import { _, t, format } from 'svelte-i18n';
+<script lang="ts">
+  import { _ } from 'svelte-i18n';
+  import type { Question } from './types';
 
-  let { item = $bindable(), loggedIn } = $props();
+  interface Props {
+    item: Question;
+    loggedIn: boolean;
+  }
+
+  let { item = $bindable(), loggedIn }: Props = $props();
 
   let deleted = $state(false);
 
@@ -24,7 +30,7 @@
     item.upvoted = true;
   }
 
-  async function changeState(state) {
+  async function changeState(state: number) {
     await fetch(`api/question/${item.id}`, {
       method: 'PUT',
       headers: {

@@ -1,11 +1,17 @@
-<script>
-  import Question from '$lib/Question.svelte';
+<script lang="ts">
+  import QuestionComponent from '$lib/Question.svelte';
+  import type { Question } from './types';
 
-  let { items, loggedIn } = $props();
+  interface Props {
+    items: Question[];
+    loggedIn: boolean;
+  }
+
+  let { items, loggedIn }: Props = $props();
 </script>
 
 {#if items}
   {#each items as item (item.id)}
-    <Question {item} {loggedIn} />
+    <QuestionComponent {item} {loggedIn} />
   {/each}
 {/if}

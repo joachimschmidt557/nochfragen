@@ -1,6 +1,5 @@
 <script>
-  import * as bootstrap from 'bootstrap';
-  import { _, t, format } from 'svelte-i18n';
+  import { _ } from 'svelte-i18n';
 </script>
 
 <div

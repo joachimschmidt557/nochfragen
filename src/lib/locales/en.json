@@ -74,9 +74,6 @@
   },
   "response": {
     "error": {
-      "type": {
-        "network": "Network Error while attempting to fetch resource."
-      },
       "question": {
         "general": "Error fetching questions",
         "deleteall": "Error while deleting all questions",

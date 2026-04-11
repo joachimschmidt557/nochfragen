@@ -7,7 +7,8 @@
   import List from '$lib/List.svelte';
   import SurveyList from '$lib/SurveyList.svelte';
   import CreateSurvey from '$lib/CreateSurvey.svelte';
-  import Export from '$lib/Export.svelte';
+
+  import Export from '$lib/modals/Export.svelte';
 
   import en from '$lib/locales/en.json';
   import de from '$lib/locales/de.json';

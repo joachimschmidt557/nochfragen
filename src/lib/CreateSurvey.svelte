@@ -1,13 +1,18 @@
-<script>
-  import { _, t, format } from 'svelte-i18n';
+<script lang="ts">
+  import { _ } from 'svelte-i18n';
 
-  let { success, error } = $props();
+  interface Props {
+    success: () => void;
+    error: (message: string) => void;
+  }
+
+  let { success, error }: Props = $props();
 
   let questionText = $state('');
   let newOptionText = $state('');
-  let options = $state([]);
+  let options: string[] = $state([]);
 
-  async function submitQuestion(ev) {
+  async function submitQuestion(ev: SubmitEvent) {
     ev.preventDefault();
 
     try {
@@ -34,12 +39,12 @@
       options = [];
       success();
     } catch (e) {
-      error(e);
+      error(`${e}`);
     }
   }
 
   function addOption() {
-    options = options.concat(newOptionText);
+    options.push(newOptionText);
     newOptionText = '';
   }
 </script>

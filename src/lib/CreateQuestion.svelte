@@ -1,11 +1,16 @@
-<script>
-  import { _, t, format } from 'svelte-i18n';
+<script lang="ts">
+  import { _ } from 'svelte-i18n';
 
-  let { success, error } = $props();
+  interface Props {
+    success: () => void;
+    error: (message: string) => void;
+  }
+
+  let { success, error }: Props = $props();
 
   let questionText = $state('');
 
-  async function submitQuestion(ev) {
+  async function submitQuestion(ev: SubmitEvent) {
     ev.preventDefault();
 
     try {
@@ -31,7 +36,7 @@
       questionText = '';
       success();
     } catch (e) {
-      error(e);
+      error(`${e}`);
     }
   }
 </script>

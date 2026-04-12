@@ -2,7 +2,7 @@ use axum::{
     Json, Router,
     extract::State,
     http::StatusCode,
-    routing::{delete, get, post, put},
+    routing::{delete, get, patch, post, put},
 };
 use dotenvy::dotenv;
 use scrypt::{
@@ -27,7 +27,11 @@ fn app() -> Router<AppState> {
         .route("/api/questions", get(questions::list_questions))
         .route("/api/questions", post(questions::add_question))
         .route("/api/questions", delete(questions::delete_all_questions))
-        .route("/api/question/{id}", put(questions::modify_question))
+        .route("/api/question/{id}", patch(questions::modify_question))
+        .route(
+            "/api/question/{id}/upvote",
+            post(questions::upvote_question),
+        )
         .route("/api/question/{id}", delete(questions::delete_question))
         .route("/api/export", get(questions::export_questions))
         // surveys

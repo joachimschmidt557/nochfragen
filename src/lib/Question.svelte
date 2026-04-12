@@ -18,12 +18,8 @@
   const hiddenAnswered = 4;
 
   async function upvote() {
-    await fetch(`api/question/${item.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ upvote: true, state: 0 })
+    await fetch(`api/question/${item.id}/upvote`, {
+      method: 'POST'
     });
 
     item.upvotes += 1;
@@ -32,11 +28,11 @@
 
   async function changeState(state: number) {
     await fetch(`api/question/${item.id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ upvote: false, state: state })
+      body: JSON.stringify({ state: state })
     });
 
     item.state = state;

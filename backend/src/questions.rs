@@ -136,7 +136,6 @@ pub async fn delete_all_questions(
 
 #[derive(Deserialize)]
 pub struct ModifyQuestionRequest {
-    upvote: bool,
     state: QuestionState,
 }
 
@@ -148,64 +147,72 @@ pub async fn modify_question(
 ) -> AppResult<Response> {
     let mut connection = app_state.db_pool.get()?;
 
-    if request.upvote {
-        let str_id = format!("question:{question_id}").to_string();
+    let logged_in = session
+        .get::<bool>("authenticated")
+        .await
+        .unwrap_or(None)
+        .unwrap_or(false);
+    if !logged_in {
+        return Ok(StatusCode::FORBIDDEN.into_response());
+    };
 
-        let upvoted = session
-            .get::<bool>(&str_id)
-            .await
-            .unwrap_or(None)
-            .unwrap_or(false);
-        if upvoted {
-            return Ok((StatusCode::FORBIDDEN, "Already upvoted").into_response());
+    let current_time: i32 = UtcDateTime::now().unix_timestamp().try_into()?;
+
+    match request.state {
+        QuestionState::Hidden | QuestionState::Unanswered | QuestionState::HiddenAnswered => {
+            diesel::update(questions::table.find(question_id))
+                .set((
+                    questions::state.eq(request.state),
+                    questions::modified_at.eq(current_time),
+                ))
+                .execute(&mut connection)?;
         }
 
-        diesel::update(questions::table.find(question_id))
-            .set(questions::upvotes.eq(questions::upvotes + 1))
-            .execute(&mut connection)?;
+        QuestionState::Answering => {
+            diesel::update(questions::table.find(question_id))
+                .set((
+                    questions::state.eq(request.state),
+                    questions::answering_at.eq(current_time),
+                ))
+                .execute(&mut connection)?;
+        }
 
-        session.insert(&str_id, true).await?;
-    } else {
-        let logged_in = session
-            .get::<bool>("authenticated")
-            .await
-            .unwrap_or(None)
-            .unwrap_or(false);
-        if !logged_in {
-            return Ok(StatusCode::FORBIDDEN.into_response());
-        };
-
-        let current_time: i32 = UtcDateTime::now().unix_timestamp().try_into()?;
-
-        match request.state {
-            QuestionState::Hidden | QuestionState::Unanswered | QuestionState::HiddenAnswered => {
-                diesel::update(questions::table.find(question_id))
-                    .set((
-                        questions::state.eq(request.state),
-                        questions::modified_at.eq(current_time),
-                    ))
-                    .execute(&mut connection)?;
-            }
-
-            QuestionState::Answering => {
-                diesel::update(questions::table.find(question_id))
-                    .set((
-                        questions::state.eq(request.state),
-                        questions::answering_at.eq(current_time),
-                    ))
-                    .execute(&mut connection)?;
-            }
-
-            QuestionState::Answered => {
-                diesel::update(questions::table.find(question_id))
-                    .set((
-                        questions::state.eq(request.state),
-                        questions::answered_at.eq(current_time),
-                    ))
-                    .execute(&mut connection)?;
-            }
+        QuestionState::Answered => {
+            diesel::update(questions::table.find(question_id))
+                .set((
+                    questions::state.eq(request.state),
+                    questions::answered_at.eq(current_time),
+                ))
+                .execute(&mut connection)?;
         }
     }
+
+    Ok(StatusCode::OK.into_response())
+}
+
+pub async fn upvote_question(
+    Path(question_id): Path<i32>,
+    State(app_state): State<AppState>,
+    session: Session,
+) -> AppResult<Response> {
+    let mut connection = app_state.db_pool.get()?;
+
+    let str_id = format!("question:{question_id}").to_string();
+
+    let upvoted = session
+        .get::<bool>(&str_id)
+        .await
+        .unwrap_or(None)
+        .unwrap_or(false);
+    if upvoted {
+        return Ok((StatusCode::FORBIDDEN, "Already upvoted").into_response());
+    }
+
+    diesel::update(questions::table.find(question_id))
+        .set(questions::upvotes.eq(questions::upvotes + 1))
+        .execute(&mut connection)?;
+
+    session.insert(&str_id, true).await?;
 
     Ok(StatusCode::OK.into_response())
 }

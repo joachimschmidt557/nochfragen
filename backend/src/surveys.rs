@@ -161,8 +161,6 @@ pub async fn add_survey(
 
 #[derive(Deserialize)]
 pub struct ModifySurveyRequest {
-    mode: i32,
-    vote: i32,
     state: SurveyState,
 }
 
@@ -174,45 +172,49 @@ pub async fn modify_survey(
 ) -> AppResult<Response> {
     let mut connection = app_state.db_pool.get()?;
 
-    match request.mode {
-        0 => {
-            let str_id = format!("survey:{survey_id}").to_string();
+    let logged_in = session
+        .get::<bool>("authenticated")
+        .await
+        .unwrap_or(None)
+        .unwrap_or(false);
+    if !logged_in {
+        return Ok(StatusCode::FORBIDDEN.into_response());
+    };
 
-            let upvoted = session
-                .get::<bool>(&str_id)
-                .await
-                .unwrap_or(None)
-                .unwrap_or(false);
-            if upvoted {
-                return Ok((StatusCode::FORBIDDEN, "Already voted").into_response());
-            }
+    diesel::update(surveys::table.find(survey_id))
+        .set(surveys::state.eq(request.state))
+        .execute(&mut connection)?;
 
-            diesel::update(
-                survey_options::table
-                    .find(request.vote)
-                    .filter(survey_options::survey.eq(survey_id)),
-            )
-            .set(survey_options::votes.eq(survey_options::votes + 1))
-            .execute(&mut connection)?;
+    Ok(StatusCode::OK.into_response())
+}
 
-            session.insert(&str_id, true).await?;
-        }
-        1 => {
-            let logged_in = session
-                .get::<bool>("authenticated")
-                .await
-                .unwrap_or(None)
-                .unwrap_or(false);
-            if !logged_in {
-                return Ok(StatusCode::FORBIDDEN.into_response());
-            };
+pub async fn vote_for_survey_option(
+    Path((survey_id, option_id)): Path<(i32, i32)>,
+    State(app_state): State<AppState>,
+    session: Session,
+) -> AppResult<Response> {
+    let mut connection = app_state.db_pool.get()?;
 
-            diesel::update(surveys::table.find(survey_id))
-                .set(surveys::state.eq(request.state))
-                .execute(&mut connection)?;
-        }
-        _ => return Ok((StatusCode::BAD_REQUEST, "Invalid mode").into_response()),
+    let str_id = format!("survey:{survey_id}").to_string();
+
+    let upvoted = session
+        .get::<bool>(&str_id)
+        .await
+        .unwrap_or(None)
+        .unwrap_or(false);
+    if upvoted {
+        return Ok((StatusCode::FORBIDDEN, "Already voted").into_response());
     }
+
+    diesel::update(
+        survey_options::table
+            .find(option_id)
+            .filter(survey_options::survey.eq(survey_id)),
+    )
+    .set(survey_options::votes.eq(survey_options::votes + 1))
+    .execute(&mut connection)?;
+
+    session.insert(&str_id, true).await?;
 
     Ok(StatusCode::OK.into_response())
 }

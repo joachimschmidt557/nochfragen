@@ -15,19 +15,12 @@
 
   let total = $derived(item.options.reduce((acc, option) => acc + option.votes, 0));
 
-  const vote = 0;
-  const modifyState = 1;
-
   const hidden = 0;
   const visible = 1;
 
   async function submit() {
-    await fetch(`api/survey/${item.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ mode: vote, vote: choice, state: hidden })
+    await fetch(`api/survey/${item.id}/option/${choice}/vote`, {
+      method: 'PUT'
     });
 
     item.voted = true;
@@ -40,8 +33,6 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        mode: modifyState,
-        vote: 0,
         state: visible
       })
     });
@@ -56,8 +47,6 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        mode: modifyState,
-        vote: 0,
         state: hidden
       })
     });

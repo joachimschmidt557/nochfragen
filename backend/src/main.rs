@@ -38,6 +38,10 @@ fn app() -> Router<AppState> {
         .route("/api/surveys", get(surveys::list_surveys))
         .route("/api/surveys", post(surveys::add_survey))
         .route("/api/survey/{id}", put(surveys::modify_survey))
+        .route(
+            "/api/survey/{id}/option/{option_id}/vote",
+            put(surveys::vote_for_survey_option),
+        )
         .route("/api/survey/{id}", delete(surveys::delete_survey))
 }
 

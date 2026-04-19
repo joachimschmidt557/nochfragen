@@ -24,7 +24,7 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
           >{$_('app.exportmodal.exit')}</button
         >
-        <a type="button" class="btn btn-primary" role="button" href="api/export" rel="external"
+        <a type="button" class="btn btn-primary" role="button" href="/api/export" rel="external"
           >{$_('app.exportmodal.action')}</a
         >
       </div>

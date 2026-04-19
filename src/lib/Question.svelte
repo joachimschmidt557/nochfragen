@@ -18,7 +18,7 @@
   const hiddenAnswered = 4;
 
   async function upvote() {
-    await fetch(`api/question/${item.id}/upvote`, {
+    await fetch(`/api/question/${item.id}/upvote`, {
       method: 'POST'
     });
 
@@ -27,7 +27,7 @@
   }
 
   async function changeState(state: number) {
-    await fetch(`api/question/${item.id}`, {
+    await fetch(`/api/question/${item.id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -39,7 +39,7 @@
   }
 
   async function deleteQuestion() {
-    await fetch(`api/question/${item.id}`, {
+    await fetch(`/api/question/${item.id}`, {
       method: 'DELETE'
     });
 

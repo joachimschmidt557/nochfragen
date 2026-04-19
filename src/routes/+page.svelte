@@ -103,8 +103,8 @@
 
     try {
       const [questionsResponse, surveysResponse] = await Promise.all([
-        fetch(`api/questions`),
-        fetch(`api/surveys`)
+        fetch(`/api/questions`),
+        fetch(`/api/surveys`)
       ]);
 
       connected = true;
@@ -149,7 +149,7 @@
 
   async function getLoginStatus() {
     try {
-      const response = await fetch(`api/login`);
+      const response = await fetch(`/api/login`);
       const data = await response.json();
       loggedIn = data.loggedIn;
     } catch (error) {
@@ -161,7 +161,7 @@
     ev.preventDefault();
 
     try {
-      const response = await fetch(`api/login`, {
+      const response = await fetch(`/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -199,7 +199,7 @@
 
   async function logout() {
     try {
-      const response = await fetch(`api/logout`, { method: 'POST' });
+      const response = await fetch(`/api/logout`, { method: 'POST' });
 
       if (!response.ok) {
         throw new Error($_('response.error.passwordlogout'));
@@ -214,7 +214,7 @@
 
   async function deleteAllQuestions() {
     try {
-      const response = await fetch(`api/questions`, { method: 'DELETE' });
+      const response = await fetch(`/api/questions`, { method: 'DELETE' });
 
       if (!response.ok) {
         throw new Error($_('response.error.question.deleteall'));

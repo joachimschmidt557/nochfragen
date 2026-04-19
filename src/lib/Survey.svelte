@@ -19,7 +19,7 @@
   const visible = 1;
 
   async function submit() {
-    await fetch(`api/survey/${item.id}/option/${choice}/vote`, {
+    await fetch(`/api/survey/${item.id}/option/${choice}/vote`, {
       method: 'PUT'
     });
 
@@ -27,7 +27,7 @@
   }
 
   async function show() {
-    await fetch(`api/survey/${item.id}`, {
+    await fetch(`/api/survey/${item.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -41,7 +41,7 @@
   }
 
   async function hide() {
-    await fetch(`api/survey/${item.id}`, {
+    await fetch(`/api/survey/${item.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -55,7 +55,7 @@
   }
 
   async function del() {
-    await fetch(`api/survey/${item.id}`, {
+    await fetch(`/api/survey/${item.id}`, {
       method: 'DELETE'
     });
 

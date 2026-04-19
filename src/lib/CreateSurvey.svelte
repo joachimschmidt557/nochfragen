@@ -16,7 +16,7 @@
     ev.preventDefault();
 
     try {
-      const response = await fetch(`api/surveys`, {
+      const response = await fetch(`/api/surveys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

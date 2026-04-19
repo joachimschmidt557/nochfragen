@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { _ } from 'svelte-i18n';
+  import { m } from '$lib/paraglide/messages.js';
 </script>
 
 <div
@@ -13,19 +13,19 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exportModalLabel">
-          {$_('app.exportmodal.title')}
+          {m.app_exportmodal_title()}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>{$_('app.exportmodal.description')}</p>
+        <p>{m.app_exportmodal_description()}</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-          >{$_('app.exportmodal.exit')}</button
+          >{m.app_exportmodal_exit()}</button
         >
         <a type="button" class="btn btn-primary" role="button" href="/api/export" rel="external"
-          >{$_('app.exportmodal.action')}</a
+          >{m.app_exportmodal_action()}</a
         >
       </div>
     </div>

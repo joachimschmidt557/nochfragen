@@ -1,12 +1,12 @@
 <script lang="ts">
   import * as bootstrap from 'bootstrap';
   import { onMount } from 'svelte';
-  import { _, init, addMessages, getLocaleFromNavigator } from 'svelte-i18n';
 
   import type { Pathname } from '$app/types';
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { locales, localizeHref } from '$lib/paraglide/runtime';
+  import { m } from '$lib/paraglide/messages.js';
 
   import type { Question, Survey } from '$lib/types';
 
@@ -17,39 +17,7 @@
 
   import Export from '$lib/modals/Export.svelte';
 
-  import en from '$lib/locales/en.json';
-  import de from '$lib/locales/de.json';
-
   import { PUBLIC_IMPRINT_URL, PUBLIC_PRIVACY_POLICY_URL } from '$env/static/public';
-
-  addMessages('en', en);
-  addMessages('de', de);
-
-  let languages = [
-    { id: 0, locale: 'us', text: `English` },
-    { id: 1, locale: 'de', text: `Deutsch` }
-  ];
-
-  let selected = $state(0);
-
-  languages.forEach((l) => {
-    if (l.locale === getLocaleFromNavigator()) {
-      selected = l.id;
-    }
-  });
-
-  init({
-    fallbackLocale: 'en',
-    initialLocale: getLocaleFromNavigator()
-  });
-
-  function switchLanguage() {
-    let s = languages[selected];
-    init({
-      fallbackLocale: 'en',
-      initialLocale: s.locale
-    });
-  }
 
   onMount(() => {
     poll();
@@ -115,10 +83,10 @@
       connected = true;
 
       if (!questionsResponse.ok) {
-        throw new ServerError($_('response.error.question.general'), questionsResponse.status);
+        throw new ServerError(m.response_error_question_general(), questionsResponse.status);
       }
       if (!surveysResponse.ok) {
-        throw new ServerError($_('response.error.survey.general'), surveysResponse.status);
+        throw new ServerError(m.response_error_survey_general(), surveysResponse.status);
       }
 
       const [questions, surveys] = [
@@ -175,14 +143,12 @@
       });
 
       if (response.status === 403) {
-        throw new Error($_('response.error.password'));
+        throw new Error(m.response_error_password());
       } else if (!response.ok) {
         throw new Error(
-          $_('response.error.login.serverreturn', {
-            values: {
-              status: response.status,
-              statusText: response.statusText
-            }
+          m.response_error_login_serverreturn({
+            status: response.status,
+            statusText: response.statusText
           })
         );
       }
@@ -207,7 +173,7 @@
       const response = await fetch(`/api/logout`, { method: 'POST' });
 
       if (!response.ok) {
-        throw new Error($_('response.error.passwordlogout'));
+        throw new Error(m.response_error_logout());
       }
 
       loggedIn = false;
@@ -222,7 +188,7 @@
       const response = await fetch(`/api/questions`, { method: 'DELETE' });
 
       if (!response.ok) {
-        throw new Error($_('response.error.question.deleteall'));
+        throw new Error(m.response_error_question_deleteall());
       }
 
       items = [];
@@ -238,14 +204,12 @@
   }
 
   async function submitSuccess() {
-    alertSuccess = $_('response.success.question.submit');
+    alertSuccess = m.response_success_question_submit();
     await updateQuestionsAndSurveys();
   }
 
   function submitError(detail: string) {
-    alertDanger = $_('response.error.question.submit', {
-      values: { detail }
-    });
+    alertDanger = m.response_error_question_submit({ detail });
   }
 
   function dismissAlertSuccess() {
@@ -273,7 +237,7 @@
 
 <nav class="navbar">
   <div class="container">
-    <span class="navbar-brand mb-0 h1">{$_('app.title')} </span>
+    <span class="navbar-brand mb-0 h1">{m.app_title()}</span>
     <span class="ms-auto">
       <div class="dropdown">
         <button
@@ -304,10 +268,10 @@
 
     <span class="navbar-brand mb-0 h1">
       {#if loggedIn}
-        <button type="button" onclick={logout} class="btn">{$_('app.moderator.logout')}</button>
+        <button type="button" onclick={logout} class="btn">{m.app_moderator_logout()}</button>
       {:else}
         <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#loginModal"
-          >{$_('app.moderator.login')}</button
+          >{m.app_moderator_login()}</button
         >
       {/if}
     </span>
@@ -339,11 +303,11 @@
           class="btn btn-outline-primary"
           disabled={updating}
         >
-          {$_('app.refresh')}
+          {m.app_refresh()}
         </button>
         {#if !connected}
           <span class="text-center text-muted fst-italic">
-            {$_('status.disconnected')}
+            {m.status_disconnected()}
           </span>
         {/if}
       </div>
@@ -355,7 +319,7 @@
             data-bs-toggle="modal"
             data-bs-target="#exportModal"
           >
-            {$_('app.moderator.export')}
+            {m.app_moderator_export()}
           </button>
           <button
             type="button"
@@ -363,7 +327,7 @@
             data-bs-toggle="modal"
             data-bs-target="#deleteModal"
           >
-            {$_('app.moderator.deleteall')}
+            {m.app_moderator_deleteall()}
           </button>
         </div>
       {/if}
@@ -384,7 +348,7 @@
 
     {#if answeredItems.length > 0}
       <div class="mt-3">
-        {$_('app.questions.answered')}
+        {m.app_questions_answered()}
         <ul class="list-group">
           <QuestionList items={answeredItems} {loggedIn} />
         </ul>
@@ -393,7 +357,7 @@
 
     {#if hiddenItems.length > 0}
       <div class="mt-3">
-        {$_('app.questions.hidden')}
+        {m.app_questions_hidden()}
         <ul class="list-group">
           <QuestionList items={hiddenItems} {loggedIn} />
         </ul>
@@ -411,12 +375,11 @@
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
-      {$_('app.opensource')}
+      {m.app_opensource()}
       <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>.
 
-      <a href={PUBLIC_IMPRINT_URL} rel="external" target="_blank">{$_('app.imprint')}</a>
-      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank"
-        >{$_('app.privacy_policy')}</a
+      <a href={PUBLIC_IMPRINT_URL} rel="external" target="_blank">{m.app_imprint()}</a>
+      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank">{m.app_privacy_policy()}</a
       >
     </p>
   </div>
@@ -433,7 +396,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="loginModalLabel">
-          {$_('app.login.title')}
+          {m.app_login_title()}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -444,14 +407,14 @@
               {passwordModalAlert}
             </div>
           {/if}
-          <label for="password" class="form-label">{$_('app.login.passwordtitle')}</label>
+          <label for="password" class="form-label">{m.app_login_passwordtitle()}</label>
           <input bind:value={password} type="password" class="form-control" id="password" />
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-            >{$_('app.login.exit')}</button
+            >{m.app_login_exit()}</button
           >
-          <button type="submit" class="btn btn-primary">{$_('app.login.action')}</button>
+          <button type="submit" class="btn btn-primary">{m.app_login_action()}</button>
         </div>
       </form>
     </div>
@@ -468,7 +431,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="deleteModalLabel">
-          {$_('app.deleteallmodal.title')}
+          {m.app_deleteallmodal_title()}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -479,15 +442,15 @@
           </div>
         {/if}
         <p>
-          {$_('app.deleteallmodal.warning')}
+          {m.app_deleteallmodal_warning()}
         </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
-          >{$_('app.deleteallmodal.exit')}</button
+          >{m.app_deleteallmodal_exit()}</button
         >
         <button type="submit" class="btn btn-danger" onclick={deleteAllQuestions}
-          >{$_('app.deleteallmodal.action')}</button
+          >{m.app_deleteallmodal_action()}</button
         >
       </div>
     </div>

@@ -11,6 +11,7 @@ FROM node:25-alpine AS frontend
 WORKDIR /app
 COPY src ./src
 COPY project.inlang ./project.inlang
+COPY messages ./messages
 COPY package.json package-lock.json svelte.config.js vite.config.js .env ./
 
 RUN npm i

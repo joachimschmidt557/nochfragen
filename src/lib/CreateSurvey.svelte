@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { _ } from 'svelte-i18n';
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     success: () => void;
@@ -26,11 +26,9 @@
 
       if (!response.ok) {
         throw new Error(
-          $_('response.error.surveys.serverreturn', {
-            values: {
-              status: response.status,
-              statusText: response.statusText
-            }
+          m.response_error_survey_serverreturn({
+            status: response.status,
+            statusText: response.statusText
           })
         );
       }
@@ -51,14 +49,14 @@
 
 <div class="list-group-item">
   <form onsubmit={submitQuestion}>
-    <label for="surveyQuestionText" class="form-label">{$_('app.surveycreationmodal.title')}</label>
+    <label for="surveyQuestionText" class="form-label">{m.app_surveycreationmodal_title()}</label>
     <div class="d-flex justify-content-between mb-2">
       <input bind:value={questionText} class="form-control" id="surveyQuestionText" />
       <button
         type="submit"
         class="btn btn-primary ms-2"
         disabled={questionText === '' || options.length == 0}
-        >{$_('app.surveycreationmodal.action')}</button
+        >{m.app_surveycreationmodal_action()}</button
       >
     </div>
     {#each options as option, index}
@@ -67,7 +65,7 @@
         <button
           onclick={() => (options = options.filter((_, i) => i != index))}
           class="btn btn-outline-danger"
-          type="button">{$_('app.surveycreationmodal.remove')}</button
+          type="button">{m.app_surveycreationmodal_remove()}</button
         >
       </div>
     {/each}
@@ -77,11 +75,11 @@
         onclick={addOption}
         class="btn btn-outline-secondary"
         type="button"
-        disabled={newOptionText === ''}>{$_('app.surveycreationmodal.add')}</button
+        disabled={newOptionText === ''}>{m.app_surveycreationmodal_add()}</button
       >
     </div>
     <div id="createSurveyLabel" class="form-text">
-      {$_('app.surveycreationmodal.description')}
+      {m.app_surveycreationmodal_description()}
     </div>
   </form>
 </div>

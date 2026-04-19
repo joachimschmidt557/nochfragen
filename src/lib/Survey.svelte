@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { _ } from 'svelte-i18n';
+  import { m } from '$lib/paraglide/messages.js';
   import type { Survey } from './types';
 
   interface Props {
@@ -75,15 +75,15 @@
       <div class="btn-group" role="group">
         {#if loggedIn}
           <button onclick={del} type="button" class="btn btn-danger">
-            {$_('app.surveys.delete')}
+            {m.app_surveys_delete()}
           </button>
           {#if item.state === visible}
             <button onclick={hide} type="button" class="btn btn-primary">
-              {$_('app.surveys.hide')}
+              {m.app_surveys_hide()}
             </button>
           {:else}
             <button onclick={show} type="button" class="btn btn-primary">
-              {$_('app.surveys.show')}
+              {m.app_surveys_show()}
             </button>
           {/if}
         {/if}
@@ -115,7 +115,7 @@
     </div>
     {#if !item.voted}
       <button onclick={submit} class="btn btn-primary mt-2" disabled={choice == -1}
-        >{$_('app.surveys.submit')}</button
+        >{m.app_surveys_submit()}</button
       >
     {/if}
   </li>

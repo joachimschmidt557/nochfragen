@@ -3,6 +3,11 @@
   import { onMount } from 'svelte';
   import { _, init, addMessages, getLocaleFromNavigator } from 'svelte-i18n';
 
+  import type { Pathname } from '$app/types';
+  import { page } from '$app/state';
+  import { resolve } from '$app/paths';
+  import { locales, localizeHref } from '$lib/paraglide/runtime';
+
   import type { Question, Survey } from '$lib/types';
 
   import CreateQuestion from '$lib/CreateQuestion.svelte';
@@ -252,7 +257,14 @@
   }
 
   // Source https://dev.to/jorik/country-code-to-flag-emoji-a21
-  function getFlagEmoji(countryCode: string) {
+  function getFlagEmoji(locale: string) {
+    let countryCode = '';
+    if (locale == 'en') {
+      countryCode = 'us';
+    } else if (locale == 'de') {
+      countryCode = 'de';
+    }
+
     return countryCode
       .toUpperCase()
       .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
@@ -263,14 +275,31 @@
   <div class="container">
     <span class="navbar-brand mb-0 h1">{$_('app.title')} </span>
     <span class="ms-auto">
-      <select class="form-select" bind:value={selected} onchange={switchLanguage}>
-        {#each languages as lang}
-          <option value={lang.id}>
-            {getFlagEmoji(lang.locale)}
-            {lang.text}
-          </option>
-        {/each}
-      </select>
+      <div class="dropdown">
+        <button
+          class="btn dropdown-toggle"
+          type="button"
+          id="languageDropdownMenuButton"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          Language
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="languageDropdownMenuButton">
+          {#each locales as locale}
+            <li>
+              <a
+                class="dropdown-item"
+                href={resolve(localizeHref(page.url.pathname, { locale }) as Pathname)}
+                data-sveltekit-reload
+              >
+                {getFlagEmoji(locale)}
+                {locale}
+              </a>
+            </li>
+          {/each}
+        </ul>
+      </div>
     </span>
 
     <span class="navbar-brand mb-0 h1">

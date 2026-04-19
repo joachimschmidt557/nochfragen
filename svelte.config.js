@@ -6,10 +6,16 @@ const config = {
   preprocess: [vitePreprocess({ script: true })],
   kit: {
     adapter: adapter(),
+    paths: {
+      relative: false
+    },
     csp: {
       directives: {
         'script-src': ['self']
       }
+    },
+    prerender: {
+      entries: ['/', '/de/']
     }
   }
 };

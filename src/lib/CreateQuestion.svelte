@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { _ } from 'svelte-i18n';
+  import { m } from '$lib/paraglide/messages.js';
 
   interface Props {
     success: () => void;
@@ -14,7 +14,7 @@
     ev.preventDefault();
 
     try {
-      const response = await fetch('api/questions', {
+      const response = await fetch('/api/questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -24,11 +24,9 @@
 
       if (!response.ok) {
         throw new Error(
-          $_('response.error.ask.serverreturn', {
-            values: {
-              status: response.status,
-              statusText: response.statusText
-            }
+          m.response_error_ask_serverreturn({
+            status: response.status,
+            statusText: response.statusText
           })
         );
       }
@@ -43,15 +41,15 @@
 
 <div class="list-group-item">
   <form onsubmit={submitQuestion}>
-    <label for="questionText" class="form-label">{$_('app.ask.title')}</label>
+    <label for="questionText" class="form-label">{m.app_ask_title()}</label>
     <div class="d-flex justify-content-between">
       <input bind:value={questionText} class="form-control" id="questionText" />
       <button type="submit" class="btn btn-primary ms-2" disabled={questionText === ''}
-        >{$_('app.ask.action')}</button
+        >{m.app_ask_action()}</button
       >
     </div>
     <div id="moderationLabel" class="form-text">
-      {$_('app.ask.moderationnotice')}
+      {m.app_ask_moderationnotice()}
     </div>
   </form>
 </div>

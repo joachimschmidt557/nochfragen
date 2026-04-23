@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { _ } from 'svelte-i18n';
+  import { m } from '$lib/paraglide/messages.js';
   import type { Question } from './types';
 
   interface Props {
@@ -18,7 +18,7 @@
   const hiddenAnswered = 4;
 
   async function upvote() {
-    await fetch(`api/question/${item.id}/upvote`, {
+    await fetch(`/api/question/${item.id}/upvote`, {
       method: 'POST'
     });
 
@@ -27,7 +27,7 @@
   }
 
   async function changeState(state: number) {
-    await fetch(`api/question/${item.id}`, {
+    await fetch(`/api/question/${item.id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -39,7 +39,7 @@
   }
 
   async function deleteQuestion() {
-    await fetch(`api/question/${item.id}`, {
+    await fetch(`/api/question/${item.id}`, {
       method: 'DELETE'
     });
 
@@ -62,35 +62,35 @@
       <div class="btn-group" role="group">
         {#if loggedIn}
           <button onclick={() => deleteQuestion()} type="button" class="btn btn-danger">
-            {$_('app.questions.item.delete')}
+            {m.app_questions_item_delete()}
           </button>
           <button
             onclick={() => changeState(hidden)}
             type="button"
             class={item.state === hidden ? 'btn btn-secondary active' : 'btn btn-secondary'}
           >
-            {$_('app.questions.item.status.hidden')}
+            {m.app_questions_item_status_hidden()}
           </button>
           <button
             onclick={() => changeState(unanswered)}
             type="button"
             class={item.state === unanswered ? 'btn btn-secondary active' : 'btn btn-secondary'}
           >
-            {$_('app.questions.item.status.unanswered')}
+            {m.app_questions_item_status_unanswered()}
           </button>
           <button
             onclick={() => changeState(answering)}
             type="button"
             class={item.state === answering ? 'btn btn-secondary active' : 'btn btn-secondary'}
           >
-            {$_('app.questions.item.status.answering')}
+            {m.app_questions_item_status_answering()}
           </button>
           <button
             onclick={() => changeState(answered)}
             type="button"
             class={item.state === answered ? 'btn btn-secondary active' : 'btn btn-secondary'}
           >
-            {$_('app.questions.item.status.answered')}
+            {m.app_questions_item_status_answered()}
           </button>
           <button
             onclick={() => changeState(hiddenAnswered)}
@@ -109,9 +109,9 @@
         style="min-width: 8em"
       >
         {#if item.upvoted}
-          {$_('app.questions.item.upvoted')}
+          {m.app_questions_item_upvoted()}
         {:else}
-          {$_('app.questions.item.upvote')}
+          {m.app_questions_item_upvote()}
         {/if}
         <span class="badge bg-secondary">{item.upvotes}</span>
       </button>

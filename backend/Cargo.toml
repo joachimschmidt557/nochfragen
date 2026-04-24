@@ -17,7 +17,7 @@ tower-sessions = "0.14.0"
 tower-sessions-redis-store = "0.16.0"
 scrypt = { version = "0.11.0", features = ["std", "simple"] }
 serde = { version = "1.0.228", features = ["derive"] }
-diesel_migrations = "2.3.1"
+diesel_migrations = "2.3.2"
 serde_repr = "0.1.20"
 anyhow = "1.0.102"
 futures = "0.3.32"

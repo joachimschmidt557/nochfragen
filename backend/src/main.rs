@@ -14,7 +14,7 @@ use tower_http::services::ServeDir;
 
 use nochfragen::{
     AppResult, AppState, connect_db, connect_openid_connect, connect_redis, create_session_layer,
-    questions, surveys,
+    oidc_login, questions, surveys,
 };
 use tower_sessions::Session;
 
@@ -24,6 +24,9 @@ fn app() -> Router<AppState> {
         .route("/api/login", get(login_status))
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
+        // openid connect
+        .route("/api/openid-connect/login", get(oidc_login::login))
+        .route("/api/openid-connect/callback", get(oidc_login::callback))
         // questions
         .route("/api/questions", get(questions::list_questions))
         .route("/api/questions", post(questions::add_question))

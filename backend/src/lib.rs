@@ -18,6 +18,8 @@ use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
 use url::Url;
 
+pub mod oidc_login;
+
 pub mod models;
 pub mod schema;
 

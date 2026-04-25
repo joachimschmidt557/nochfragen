@@ -26,6 +26,7 @@
 
   let updating = $state(true);
   let loggedIn = $state(false);
+  let openidConnectAvailable = $state(false);
 
   let items: Question[] = $state([]);
   let answeredItems: Question[] = $state([]);
@@ -125,6 +126,7 @@
       const response = await fetch(`/api/login`);
       const data = await response.json();
       loggedIn = data.loggedIn;
+      openidConnectAvailable = data.openidConnectAvailable;
     } catch (error) {
       alertDanger = `${error}`;
     }
@@ -402,13 +404,23 @@
       </div>
       <form onsubmit={login}>
         <div class="modal-body">
-          {#if passwordModalAlert !== ''}
-            <div class="alert alert-danger" role="alert">
-              {passwordModalAlert}
+          {#if openidConnectAvailable}
+            <div class="mb-3">
+              <a class="btn btn-primary" href="/api/openid-connect/login">Sign in with SSO</a>
             </div>
+
+            <hr />
           {/if}
-          <label for="password" class="form-label">{m.app_login_passwordtitle()}</label>
-          <input bind:value={password} type="password" class="form-control" id="password" />
+
+          <div class="mb-3">
+            {#if passwordModalAlert !== ''}
+              <div class="alert alert-danger" role="alert">
+                {passwordModalAlert}
+              </div>
+            {/if}
+            <label for="password" class="form-label">{m.app_login_passwordtitle()}</label>
+            <input bind:value={password} type="password" class="form-control" id="password" />
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"

@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{Context, anyhow};
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -31,8 +31,16 @@ pub async fn login(State(state): State<AppState>, jar: CookieJar) -> AppResult<R
         .url();
 
     let jar = jar
-        .add(Cookie::new("state", csrf_token.into_secret()))
-        .add(Cookie::new("nonce", String::from(nonce.secret())));
+        .add(
+            Cookie::build(("state", csrf_token.into_secret()))
+                .secure(true)
+                .http_only(true),
+        )
+        .add(
+            Cookie::build(("nonce", String::from(nonce.secret())))
+                .secure(true)
+                .http_only(true),
+        );
 
     Ok((jar, Redirect::to(auth_url.as_str())).into_response())
 }
@@ -57,7 +65,7 @@ pub async fn callback(
         // Following redirects opens the client up to SSRF vulnerabilities.
         .redirect(reqwest::redirect::Policy::none())
         .build()
-        .expect("Failed to build reqwest client");
+        .context("Failed to build reqwest client")?;
 
     let cookie_state = jar
         .get("state")

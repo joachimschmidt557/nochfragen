@@ -56,13 +56,17 @@ npm run build
 
 `nochfragen` is configured with environment variables:
 
-| Environment variable   | Default          | Description              |
-|------------------------|------------------|--------------------------|
-| `$NOCHFRAGEN_PASSWORD` | None             | Moderation password      |
-| `$LISTEN_ADDRESS`      | `127.0.0.1:8080` | Address to listen on     |
-| `$REDIS_ADDRESS`       | `127.0.0.1:6379` | Redis connection address |
-| `$DATABASE_URL`        | `db.sqlite`      | Path to SQLite database  |
-| `$ROOT_DIR`            | `../build`       | Path to frontend build   |
+| Environment variable              | Default          | Description                            |
+|-----------------------------------|------------------|----------------------------------------|
+| `$NOCHFRAGEN_PASSWORD` (required) | None             | Moderation password                    |
+| `$OIDC_ISSUER_URL` (optional)     | None             | URL of OpenID Connect provider         |
+| `$OIDC_CLIENT_ID` (optional)      | None             | OpenID Connect client ID               |
+| `$OIDC_CLIENT_SECRET` (optional)  | None             | OpenID Connect client secret           |
+| `$BASE_URL` (optional)            | None             | Base URL where nochfragen is served at |
+| `$LISTEN_ADDRESS`                 | `127.0.0.1:8080` | Address to listen on                   |
+| `$REDIS_ADDRESS`                  | `127.0.0.1:6379` | Redis connection address               |
+| `$DATABASE_URL`                   | `db.sqlite`      | Path to SQLite database                |
+| `$ROOT_DIR`                       | `../build`       | Path to frontend build                 |
 
 ## License
 

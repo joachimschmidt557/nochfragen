@@ -13,7 +13,8 @@ use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
 
 use nochfragen::{
-    AppResult, AppState, connect_db, connect_redis, create_session_layer, questions, surveys,
+    AppResult, AppState, connect_db, connect_openid_connect, connect_redis, create_session_layer,
+    oidc_login, questions, surveys,
 };
 use tower_sessions::Session;
 
@@ -23,6 +24,9 @@ fn app() -> Router<AppState> {
         .route("/api/login", get(login_status))
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
+        // openid connect
+        .route("/api/openid-connect/login", get(oidc_login::login))
+        .route("/api/openid-connect/callback", get(oidc_login::callback))
         // questions
         .route("/api/questions", get(questions::list_questions))
         .route("/api/questions", post(questions::add_question))
@@ -54,6 +58,7 @@ async fn main() {
 
     let redis_pool = connect_redis().await;
     let db_pool = connect_db();
+    let oidc_client = connect_openid_connect().await;
     let session_layer = create_session_layer(redis_pool.clone());
 
     let salt = SaltString::generate(&mut OsRng);
@@ -66,6 +71,7 @@ async fn main() {
             .hash_password(password.as_bytes(), &salt)
             .expect("failed to hash password")
             .serialize(),
+        oidc_client,
     };
 
     let app = app()
@@ -89,15 +95,24 @@ async fn main() {
 #[serde(rename_all = "camelCase")]
 struct LoginStatusResponse {
     logged_in: bool,
+    openid_connect_available: bool,
 }
 
-async fn login_status(session: Session) -> Json<LoginStatusResponse> {
+async fn login_status(
+    State(state): State<AppState>,
+    session: Session,
+) -> Json<LoginStatusResponse> {
     let logged_in = session
         .get::<bool>("authenticated")
         .await
         .unwrap_or(None)
         .unwrap_or(false);
-    Json(LoginStatusResponse { logged_in })
+    let openid_connect_available = state.oidc_client.is_some();
+
+    Json(LoginStatusResponse {
+        logged_in,
+        openid_connect_available,
+    })
 }
 
 #[derive(Deserialize)]

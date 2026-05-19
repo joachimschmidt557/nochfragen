@@ -12,7 +12,7 @@ dotenvy = "0.15.7"
 fred = "10.1.0"
 time = "0.3.47"
 tokio = { version = "1.52.3", features = ["rt-multi-thread"] }
-tower-http = { version = "0.6.10", features = ["fs"] }
+tower-http = { version = "0.6.11", features = ["fs"] }
 tower-sessions = "0.14.0"
 tower-sessions-redis-store = "0.16.0"
 scrypt = { version = "0.11.0", features = ["std", "simple"] }

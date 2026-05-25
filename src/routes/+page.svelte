@@ -223,7 +223,7 @@
   }
 
   // Source https://dev.to/jorik/country-code-to-flag-emoji-a21
-  function getFlagEmoji(locale: string) {
+  function getFlagEmoji(locale: 'en' | 'de') {
     let countryCode = '';
     if (locale == 'en') {
       countryCode = 'us';
@@ -272,9 +272,9 @@
       {#if loggedIn}
         <button type="button" onclick={logout} class="btn">{m.app_moderator_logout()}</button>
       {:else}
-        <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#loginModal"
-          >{m.app_moderator_login()}</button
-        >
+        <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#loginModal">
+          {m.app_moderator_login()}
+        </button>
       {/if}
     </span>
   </div>
@@ -284,16 +284,16 @@
     {#if alertSuccess !== ''}
       <div class="alert alert-success alert-dismissible" role="alert">
         {alertSuccess}
-        <button onclick={dismissAlertSuccess} type="button" class="btn-close" aria-label="Close"
-        ></button>
+        <button onclick={dismissAlertSuccess} type="button" class="btn-close" aria-label="Close">
+        </button>
       </div>
     {/if}
 
     {#if alertDanger !== ''}
       <div class="alert alert-danger alert-dismissible" role="alert">
         {alertDanger}
-        <button onclick={dismissAlertDanger} type="button" class="btn-close" aria-label="Close"
-        ></button>
+        <button onclick={dismissAlertDanger} type="button" class="btn-close" aria-label="Close">
+        </button>
       </div>
     {/if}
 
@@ -381,8 +381,9 @@
       <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>.
 
       <a href={PUBLIC_IMPRINT_URL} rel="external" target="_blank">{m.app_imprint()}</a>
-      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank">{m.app_privacy_policy()}</a
-      >
+      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank">
+        {m.app_privacy_policy()}
+      </a>
     </p>
   </div>
 </main>
@@ -423,9 +424,9 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-            >{m.app_login_exit()}</button
-          >
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            {m.app_login_exit()}
+          </button>
           <button type="submit" class="btn btn-primary">{m.app_login_action()}</button>
         </div>
       </form>
@@ -458,12 +459,12 @@
         </p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
-          >{m.app_deleteallmodal_exit()}</button
-        >
-        <button type="submit" class="btn btn-danger" onclick={deleteAllQuestions}
-          >{m.app_deleteallmodal_action()}</button
-        >
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          {m.app_deleteallmodal_exit()}
+        </button>
+        <button type="submit" class="btn btn-danger" onclick={deleteAllQuestions}>
+          {m.app_deleteallmodal_action()}
+        </button>
       </div>
     </div>
   </div>

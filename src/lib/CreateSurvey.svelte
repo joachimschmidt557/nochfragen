@@ -56,8 +56,9 @@
         type="submit"
         class="btn btn-primary ms-2"
         disabled={questionText === '' || options.length == 0}
-        >{m.app_surveycreationmodal_action()}</button
       >
+        {m.app_surveycreationmodal_action()}
+      </button>
     </div>
     {#each options as option, index}
       <div class="input-group mb-2">
@@ -65,8 +66,10 @@
         <button
           onclick={() => (options = options.filter((_, i) => i != index))}
           class="btn btn-outline-danger"
-          type="button">{m.app_surveycreationmodal_remove()}</button
+          type="button"
         >
+          {m.app_surveycreationmodal_remove()}
+        </button>
       </div>
     {/each}
     <div class="input-group mb-2">
@@ -75,8 +78,10 @@
         onclick={addOption}
         class="btn btn-outline-secondary"
         type="button"
-        disabled={newOptionText === ''}>{m.app_surveycreationmodal_add()}</button
+        disabled={newOptionText === ''}
       >
+        {m.app_surveycreationmodal_add()}
+      </button>
     </div>
     <div id="createSurveyLabel" class="form-text">
       {m.app_surveycreationmodal_description()}

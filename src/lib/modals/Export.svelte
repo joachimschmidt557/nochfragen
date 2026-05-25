@@ -21,12 +21,12 @@
         <p>{m.app_exportmodal_description()}</p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-          >{m.app_exportmodal_exit()}</button
-        >
-        <a type="button" class="btn btn-primary" role="button" href="/api/export" rel="external"
-          >{m.app_exportmodal_action()}</a
-        >
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          {m.app_exportmodal_exit()}
+        </button>
+        <a type="button" class="btn btn-primary" role="button" href="/api/export" rel="external">
+          {m.app_exportmodal_action()}
+        </a>
       </div>
     </div>
   </div>

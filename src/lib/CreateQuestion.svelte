@@ -44,9 +44,9 @@
     <label for="questionText" class="form-label">{m.app_ask_title()}</label>
     <div class="d-flex justify-content-between">
       <input bind:value={questionText} class="form-control" id="questionText" />
-      <button type="submit" class="btn btn-primary ms-2" disabled={questionText === ''}
-        >{m.app_ask_action()}</button
-      >
+      <button type="submit" class="btn btn-primary ms-2" disabled={questionText === ''}>
+        {m.app_ask_action()}
+      </button>
     </div>
     <div id="moderationLabel" class="form-text">
       {m.app_ask_moderationnotice()}

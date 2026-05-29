@@ -1,4 +1,4 @@
-FROM rust:1.95-alpine AS backend
+FROM rust:1.96-alpine AS backend
 
 RUN apk add --no-cache sqlite-dev sqlite-static
 

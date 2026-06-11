@@ -136,7 +136,8 @@ pub async fn delete_all_questions(
 
 #[derive(Deserialize)]
 pub struct ModifyQuestionRequest {
-    state: QuestionState,
+    text: Option<String>,
+    state: Option<QuestionState>,
 }
 
 pub async fn modify_question(
@@ -158,34 +159,62 @@ pub async fn modify_question(
 
     let current_time: i32 = UtcDateTime::now().unix_timestamp().try_into()?;
 
-    match request.state {
-        QuestionState::Hidden | QuestionState::Unanswered | QuestionState::HiddenAnswered => {
-            diesel::update(questions::table.find(question_id))
-                .set((
-                    questions::state.eq(request.state),
-                    questions::modified_at.eq(current_time),
-                ))
-                .execute(&mut connection)?;
+    if let Some(text) = &request.text {
+        if text.is_empty() {
+            return Ok((StatusCode::BAD_REQUEST, "Empty question").into_response());
         }
 
-        QuestionState::Answering => {
-            diesel::update(questions::table.find(question_id))
-                .set((
-                    questions::state.eq(request.state),
-                    questions::answering_at.eq(current_time),
-                ))
-                .execute(&mut connection)?;
-        }
-
-        QuestionState::Answered => {
-            diesel::update(questions::table.find(question_id))
-                .set((
-                    questions::state.eq(request.state),
-                    questions::answered_at.eq(current_time),
-                ))
-                .execute(&mut connection)?;
+        if text.len() > MAX_QUESTION_LEN {
+            return Ok(
+                (StatusCode::BAD_REQUEST, "Maximum question length exceeded").into_response(),
+            );
         }
     }
+
+    connection.transaction(|conn| {
+        if let Some(text) = &request.text {
+            diesel::update(questions::table.find(question_id))
+                .set((
+                    questions::text.eq(text),
+                    questions::modified_at.eq(current_time),
+                ))
+                .execute(conn)?;
+        }
+
+        if let Some(state) = request.state {
+            match state {
+                QuestionState::Hidden
+                | QuestionState::Unanswered
+                | QuestionState::HiddenAnswered => {
+                    diesel::update(questions::table.find(question_id))
+                        .set((
+                            questions::state.eq(state),
+                            questions::modified_at.eq(current_time),
+                        ))
+                        .execute(conn)?;
+                }
+
+                QuestionState::Answering => {
+                    diesel::update(questions::table.find(question_id))
+                        .set((
+                            questions::state.eq(state),
+                            questions::answering_at.eq(current_time),
+                        ))
+                        .execute(conn)?;
+                }
+
+                QuestionState::Answered => {
+                    diesel::update(questions::table.find(question_id))
+                        .set((
+                            questions::state.eq(state),
+                            questions::answered_at.eq(current_time),
+                        ))
+                        .execute(conn)?;
+                }
+            }
+        }
+        Ok::<_, diesel::result::Error>(())
+    })?;
 
     Ok(StatusCode::OK.into_response())
 }

@@ -171,7 +171,16 @@ pub async fn modify_question(
         }
     }
 
-    connection.transaction(|conn| {
+    let question_exists = connection.transaction(|conn| {
+        let count: i64 = questions::table
+            .find(question_id)
+            .count()
+            .get_result(conn)?;
+
+        if count == 0 {
+            return Ok(false);
+        }
+
         if let Some(text) = &request.text {
             diesel::update(questions::table.find(question_id))
                 .set((
@@ -213,8 +222,12 @@ pub async fn modify_question(
                 }
             }
         }
-        Ok::<_, diesel::result::Error>(())
+        Ok::<bool, diesel::result::Error>(true)
     })?;
+
+    if !question_exists {
+        return Ok(StatusCode::NOT_FOUND.into_response());
+    }
 
     Ok(StatusCode::OK.into_response())
 }
@@ -237,9 +250,13 @@ pub async fn upvote_question(
         return Ok((StatusCode::FORBIDDEN, "Already upvoted").into_response());
     }
 
-    diesel::update(questions::table.find(question_id))
+    let rows_affected = diesel::update(questions::table.find(question_id))
         .set(questions::upvotes.eq(questions::upvotes + 1))
         .execute(&mut connection)?;
+
+    if rows_affected == 0 {
+        return Ok(StatusCode::NOT_FOUND.into_response());
+    }
 
     session.insert(&str_id, true).await?;
 
@@ -262,7 +279,12 @@ pub async fn delete_question(
         return Ok(StatusCode::FORBIDDEN);
     };
 
-    diesel::delete(questions::table.find(question_id)).execute(&mut connection)?;
+    let rows_affected =
+        diesel::delete(questions::table.find(question_id)).execute(&mut connection)?;
+
+    if rows_affected == 0 {
+        return Ok(StatusCode::NOT_FOUND);
+    }
 
     Ok(StatusCode::OK)
 }

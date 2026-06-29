@@ -18,7 +18,7 @@
   "devDependencies": {
     "@inlang/paraglide-js": "^2.20.2",
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.61.1",
+    "@sveltejs/kit": "^2.68.0",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@types/node": "^26.0.1",
     "bootstrap": "^5.3.8",

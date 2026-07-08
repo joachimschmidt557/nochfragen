@@ -20,7 +20,7 @@
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.69.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "bootstrap": "^5.3.8",
     "prettier": "^3.9.4",
     "prettier-plugin-svelte": "^4.1.1",

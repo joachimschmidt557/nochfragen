@@ -9,6 +9,7 @@
   import { m } from '$lib/paraglide/messages.js';
 
   import type { Question, Survey } from '$lib/types';
+  import { QuestionState } from '$lib/types';
 
   import CreateQuestion from '$lib/CreateQuestion.svelte';
   import QuestionList from '$lib/QuestionList.svelte';
@@ -56,16 +57,13 @@
   }
 
   function questionOrder(a: Question, b: Question) {
-    const answering = 2;
-    const answered = 3;
-
-    if (a.state === answering) {
+    if (a.state === QuestionState.Answering) {
       return -1;
-    } else if (b.state === answering) {
+    } else if (b.state === QuestionState.Answering) {
       return 1;
-    } else if (a.state === answered) {
+    } else if (a.state === QuestionState.Answered) {
       return 1;
-    } else if (b.state === answered) {
+    } else if (b.state === QuestionState.Answered) {
       return -1;
     } else {
       return b.upvotes - a.upvotes;
@@ -95,17 +93,16 @@
         (await surveysResponse.json()) as Survey[]
       ];
 
-      const hidden = 0;
-      const answered = 3;
-      const hiddenAnswered = 4;
-
       questions.sort(questionOrder);
       items = questions.filter(
-        (x) => x.state !== answered && x.state !== hidden && x.state !== hiddenAnswered
+        (x) =>
+          x.state !== QuestionState.Answered &&
+          x.state !== QuestionState.Hidden &&
+          x.state !== QuestionState.HiddenAnswered
       );
-      answeredItems = questions.filter((x) => x.state === answered);
-      hiddenItems = questions.filter((x) => x.state === hidden);
-      hiddenAnsweredItems = questions.filter((x) => x.state === hiddenAnswered);
+      answeredItems = questions.filter((x) => x.state === QuestionState.Answered);
+      hiddenItems = questions.filter((x) => x.state === QuestionState.Hidden);
+      hiddenAnsweredItems = questions.filter((x) => x.state === QuestionState.HiddenAnswered);
       surveyItems = surveys;
 
       updating = false;

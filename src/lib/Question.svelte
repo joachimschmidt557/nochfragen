@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages.js';
   import type { Question } from './types';
+  import { QuestionState } from './types';
 
   interface Props {
     item: Question;
@@ -11,49 +12,67 @@
 
   let deleted = $state(false);
 
-  const hidden = 0;
-  const unanswered = 1;
-  const answering = 2;
-  const answered = 3;
-  const hiddenAnswered = 4;
-
   async function upvote() {
-    await fetch(`/api/question/${item.id}/upvote`, {
-      method: 'POST'
-    });
+    try {
+      const response = await fetch(`/api/question/${item.id}/upvote`, {
+        method: 'POST'
+      });
 
-    item.upvotes += 1;
-    item.upvoted = true;
+      if (!response.ok) {
+        throw new Error('Failed to upvote');
+      }
+
+      item.upvotes += 1;
+      item.upvoted = true;
+    } catch (error) {
+      console.error('Failed to upvote:', error);
+    }
   }
 
-  async function changeState(state: number) {
-    await fetch(`/api/question/${item.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ state: state })
-    });
+  async function changeState(state: QuestionState) {
+    try {
+      const response = await fetch(`/api/question/${item.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ state: state })
+      });
 
-    item.state = state;
+      if (!response.ok) {
+        throw new Error('Failed to update state');
+      }
+
+      item.state = state;
+    } catch (error) {
+      console.error('Failed to change state:', error);
+    }
   }
 
   async function deleteQuestion() {
-    await fetch(`/api/question/${item.id}`, {
-      method: 'DELETE'
-    });
+    try {
+      const response = await fetch(`/api/question/${item.id}`, {
+        method: 'DELETE'
+      });
 
-    deleted = true;
+      if (!response.ok) {
+        throw new Error('Failed to delete');
+      }
+
+      deleted = true;
+    } catch (error) {
+      console.error('Failed to delete question:', error);
+    }
   }
 </script>
 
 {#if !deleted}
   <li
-    class={item.state === answering
+    class={item.state === QuestionState.Answering
       ? 'list-group-item active d-flex justify-content-between'
       : 'list-group-item d-flex justify-content-between'}
   >
-    {#if item.state === answered}
+    {#if item.state === QuestionState.Answered}
       <span class="text-muted">{item.text}</span>
     {:else}
       {item.text}
@@ -65,37 +84,47 @@
             {m.app_questions_item_delete()}
           </button>
           <button
-            onclick={() => changeState(hidden)}
+            onclick={() => changeState(QuestionState.Hidden)}
             type="button"
-            class={item.state === hidden ? 'btn btn-secondary active' : 'btn btn-secondary'}
+            class={item.state === QuestionState.Hidden
+              ? 'btn btn-secondary active'
+              : 'btn btn-secondary'}
           >
             {m.app_questions_item_status_hidden()}
           </button>
           <button
-            onclick={() => changeState(unanswered)}
+            onclick={() => changeState(QuestionState.Unanswered)}
             type="button"
-            class={item.state === unanswered ? 'btn btn-secondary active' : 'btn btn-secondary'}
+            class={item.state === QuestionState.Unanswered
+              ? 'btn btn-secondary active'
+              : 'btn btn-secondary'}
           >
             {m.app_questions_item_status_unanswered()}
           </button>
           <button
-            onclick={() => changeState(answering)}
+            onclick={() => changeState(QuestionState.Answering)}
             type="button"
-            class={item.state === answering ? 'btn btn-secondary active' : 'btn btn-secondary'}
+            class={item.state === QuestionState.Answering
+              ? 'btn btn-secondary active'
+              : 'btn btn-secondary'}
           >
             {m.app_questions_item_status_answering()}
           </button>
           <button
-            onclick={() => changeState(answered)}
+            onclick={() => changeState(QuestionState.Answered)}
             type="button"
-            class={item.state === answered ? 'btn btn-secondary active' : 'btn btn-secondary'}
+            class={item.state === QuestionState.Answered
+              ? 'btn btn-secondary active'
+              : 'btn btn-secondary'}
           >
             {m.app_questions_item_status_answered()}
           </button>
           <button
-            onclick={() => changeState(hiddenAnswered)}
+            onclick={() => changeState(QuestionState.HiddenAnswered)}
             type="button"
-            class={item.state === hiddenAnswered ? 'btn btn-secondary active' : 'btn btn-secondary'}
+            class={item.state === QuestionState.HiddenAnswered
+              ? 'btn btn-secondary active'
+              : 'btn btn-secondary'}
           >
             Hidden and answered
           </button>
@@ -105,7 +134,7 @@
         onclick={upvote}
         disabled={item.upvoted}
         type="button"
-        class={item.state === answering ? 'btn btn-light' : 'btn btn-primary'}
+        class={item.state === QuestionState.Answering ? 'btn btn-light' : 'btn btn-primary'}
         style="min-width: 8em"
       >
         {#if item.upvoted}

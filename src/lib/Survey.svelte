@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from '$lib/paraglide/messages.js';
   import type { Survey } from './types';
+  import { SurveyState } from './types';
 
   interface Props {
     item: Survey;
@@ -10,56 +11,86 @@
   let { item = $bindable(), loggedIn }: Props = $props();
 
   let choice = $state(-1);
-
   let deleted = $state(false);
+  let submitError = $state<string | null>(null);
 
   let total = $derived(item.options.reduce((acc, option) => acc + option.votes, 0));
 
-  const hidden = 0;
-  const visible = 1;
-
   async function submit() {
-    await fetch(`/api/survey/${item.id}/option/${choice}/vote`, {
-      method: 'PUT'
-    });
+    try {
+      const response = await fetch(`/api/survey/${item.id}/option/${choice}/vote`, {
+        method: 'PUT'
+      });
 
-    item.voted = true;
+      if (!response.ok) {
+        throw new Error('Failed to vote');
+      }
+
+      item.voted = true;
+      submitError = null;
+    } catch (error) {
+      submitError = `${error}`;
+    }
   }
 
   async function show() {
-    await fetch(`/api/survey/${item.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        state: visible
-      })
-    });
+    try {
+      const response = await fetch(`/api/survey/${item.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          state: SurveyState.Visible
+        })
+      });
 
-    item.state = visible;
+      if (!response.ok) {
+        throw new Error('Failed to show survey');
+      }
+
+      item.state = SurveyState.Visible;
+    } catch (error) {
+      console.error('Failed to show survey:', error);
+    }
   }
 
   async function hide() {
-    await fetch(`/api/survey/${item.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        state: hidden
-      })
-    });
+    try {
+      const response = await fetch(`/api/survey/${item.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          state: SurveyState.Hidden
+        })
+      });
 
-    item.state = hidden;
+      if (!response.ok) {
+        throw new Error('Failed to hide survey');
+      }
+
+      item.state = SurveyState.Hidden;
+    } catch (error) {
+      console.error('Failed to hide survey:', error);
+    }
   }
 
   async function del() {
-    await fetch(`/api/survey/${item.id}`, {
-      method: 'DELETE'
-    });
+    try {
+      const response = await fetch(`/api/survey/${item.id}`, {
+        method: 'DELETE'
+      });
 
-    deleted = true;
+      if (!response.ok) {
+        throw new Error('Failed to delete survey');
+      }
+
+      deleted = true;
+    } catch (error) {
+      console.error('Failed to delete survey:', error);
+    }
   }
 
   function calcPercent(votes: number) {
@@ -70,6 +101,11 @@
 
 {#if !deleted}
   <li class="list-group-item">
+    {#if submitError}
+      <div class="alert alert-danger" role="alert">
+        {submitError}
+      </div>
+    {/if}
     <div class="d-flex w-100 justify-content-between">
       {item.text}
       <div class="btn-group" role="group">
@@ -77,7 +113,7 @@
           <button onclick={del} type="button" class="btn btn-danger">
             {m.app_surveys_delete()}
           </button>
-          {#if item.state === visible}
+          {#if item.state === SurveyState.Visible}
             <button onclick={hide} type="button" class="btn btn-primary">
               {m.app_surveys_hide()}
             </button>

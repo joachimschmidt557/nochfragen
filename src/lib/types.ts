@@ -1,9 +1,22 @@
+export enum QuestionState {
+  Hidden = 0,
+  Unanswered = 1,
+  Answering = 2,
+  Answered = 3,
+  HiddenAnswered = 4
+}
+
 export interface Question {
   id: number;
   text: string;
   upvotes: number;
-  state: number;
+  state: QuestionState;
   upvoted: boolean;
+}
+
+export enum SurveyState {
+  Hidden = 0,
+  Visible = 1
 }
 
 export interface SurveyOption {
@@ -15,7 +28,7 @@ export interface SurveyOption {
 export interface Survey {
   id: number;
   text: string;
-  state: number;
+  state: SurveyState;
   voted: boolean;
   options: SurveyOption[];
 }

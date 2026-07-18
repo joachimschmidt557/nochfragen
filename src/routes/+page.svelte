@@ -368,7 +368,7 @@
 
     {#if hiddenAnsweredItems.length > 0}
       <div class="mt-3">
-        Hidden and Answered
+        {m.app_questions_hidden_and_answered()}
         <ul class="list-group">
           <QuestionList items={hiddenAnsweredItems} {loggedIn} />
         </ul>

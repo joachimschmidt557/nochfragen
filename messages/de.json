@@ -9,6 +9,7 @@
   "app_moderator_deleteall": "Alle Fragen löschen",
   "app_questions_answered": "Beantwortete Fragen",
   "app_questions_hidden": "Verdeckte Fragen",
+  "app_questions_hidden_and_answered": "Verdeckte und beantwortete Fragen",
   "app_questions_item_upvoted": "Upvoted",
   "app_questions_item_upvote": "Upvote",
   "app_questions_item_delete": "Löschen",

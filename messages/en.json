@@ -9,6 +9,7 @@
   "app_moderator_deleteall": "Delete all questions",
   "app_questions_answered": "Answered questions",
   "app_questions_hidden": "Hidden questions",
+  "app_questions_hidden_and_answered": "Hidden and answered questions",
   "app_questions_item_upvoted": "Upvoted",
   "app_questions_item_upvote": "Upvote",
   "app_questions_item_delete": "Delete",

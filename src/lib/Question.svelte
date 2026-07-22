@@ -68,9 +68,10 @@
 
 {#if !deleted}
   <li
-    class={item.state === QuestionState.Answering
-      ? 'list-group-item active d-flex justify-content-between'
-      : 'list-group-item d-flex justify-content-between'}
+    class={[
+      'list-group-item d-flex justify-content-between',
+      item.state === QuestionState.Answering && 'active'
+    ]}
   >
     {#if item.state === QuestionState.Answered}
       <span class="text-muted">{item.text}</span>
@@ -86,45 +87,35 @@
           <button
             onclick={() => changeState(QuestionState.Hidden)}
             type="button"
-            class={item.state === QuestionState.Hidden
-              ? 'btn btn-secondary active'
-              : 'btn btn-secondary'}
+            class={['btn btn-secondary', item.state === QuestionState.Hidden && 'active']}
           >
             {m.app_questions_item_status_hidden()}
           </button>
           <button
             onclick={() => changeState(QuestionState.Unanswered)}
             type="button"
-            class={item.state === QuestionState.Unanswered
-              ? 'btn btn-secondary active'
-              : 'btn btn-secondary'}
+            class={['btn btn-secondary', item.state === QuestionState.Unanswered && 'active']}
           >
             {m.app_questions_item_status_unanswered()}
           </button>
           <button
             onclick={() => changeState(QuestionState.Answering)}
             type="button"
-            class={item.state === QuestionState.Answering
-              ? 'btn btn-secondary active'
-              : 'btn btn-secondary'}
+            class={['btn btn-secondary', item.state === QuestionState.Answering && 'active']}
           >
             {m.app_questions_item_status_answering()}
           </button>
           <button
             onclick={() => changeState(QuestionState.Answered)}
             type="button"
-            class={item.state === QuestionState.Answered
-              ? 'btn btn-secondary active'
-              : 'btn btn-secondary'}
+            class={['btn btn-secondary', item.state === QuestionState.Answered && 'active']}
           >
             {m.app_questions_item_status_answered()}
           </button>
           <button
             onclick={() => changeState(QuestionState.HiddenAnswered)}
             type="button"
-            class={item.state === QuestionState.HiddenAnswered
-              ? 'btn btn-secondary active'
-              : 'btn btn-secondary'}
+            class={['btn btn-secondary', item.state === QuestionState.HiddenAnswered && 'active']}
           >
             Hidden and answered
           </button>
@@ -134,7 +125,7 @@
         onclick={upvote}
         disabled={item.upvoted}
         type="button"
-        class={item.state === QuestionState.Answering ? 'btn btn-light' : 'btn btn-primary'}
+        class={['btn', item.state === QuestionState.Answering ? 'btn-light' : 'btn-primary']}
         style="min-width: 8em"
       >
         {#if item.upvoted}

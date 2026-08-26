@@ -17,6 +17,7 @@
   "app_questions_item_status_unanswered": "Unanswered",
   "app_questions_item_status_answering": "Answering",
   "app_questions_item_status_answered": "Answered",
+  "app_questions_item_status_hidden_and_answered": "Hidden and Answered",
   "app_surveys_delete": "Delete",
   "app_surveys_hide": "Hide",
   "app_surveys_show": "Show",

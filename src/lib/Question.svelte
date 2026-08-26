@@ -117,7 +117,7 @@
             type="button"
             class={['btn btn-secondary', item.state === QuestionState.HiddenAnswered && 'active']}
           >
-            Hidden and answered
+            {m.app_questions_item_status_hidden_and_answered()}
           </button>
         {/if}
       </div>

@@ -16,7 +16,7 @@
   import CreateSurvey from '$lib/CreateSurvey.svelte';
   import SurveyList from '$lib/SurveyList.svelte';
 
-  import Export from '$lib/modals/Export.svelte';
+  import Settings from '$lib/modals/Settings.svelte';
 
   import { PUBLIC_IMPRINT_URL, PUBLIC_PRIVACY_POLICY_URL } from '$env/static/public';
 
@@ -38,7 +38,6 @@
   let connected = $state(true);
   let password = $state('');
   let passwordModalAlert = $state('');
-  let deleteModalAlert = $state('');
   let alertSuccess = $state('');
   let alertDanger = $state('');
 
@@ -182,26 +181,6 @@
     }
   }
 
-  async function deleteAllQuestions() {
-    try {
-      const response = await fetch(`/api/questions`, { method: 'DELETE' });
-
-      if (!response.ok) {
-        throw new Error(m.response_error_question_deleteall());
-      }
-
-      items = [];
-      deleteModalAlert = '';
-      var deleteModal = bootstrap.Modal.getOrCreateInstance(
-        document.getElementById('deleteModal'),
-        {}
-      );
-      deleteModal.hide();
-    } catch (error) {
-      deleteModalAlert = `${error}`;
-    }
-  }
-
   async function submitSuccess() {
     alertSuccess = m.response_success_question_submit();
     await updateQuestionsAndSurveys();
@@ -311,24 +290,14 @@
         {/if}
       </div>
       {#if loggedIn}
-        <div class="btn-group" role="group" aria-label="Controls">
-          <button
-            type="button"
-            class="btn btn-outline-secondary"
-            data-bs-toggle="modal"
-            data-bs-target="#exportModal"
-          >
-            {m.app_moderator_export()}
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-danger"
-            data-bs-toggle="modal"
-            data-bs-target="#deleteModal"
-          >
-            {m.app_moderator_deleteall()}
-          </button>
-        </div>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-toggle="modal"
+          data-bs-target="#settingsModal"
+        >
+          {m.app_settings()}
+        </button>
       {/if}
     </div>
 
@@ -432,40 +401,10 @@
     </div>
   </div>
 </div>
-<div
-  class="modal fade"
-  id="deleteModal"
-  tabindex="-1"
-  aria-labelledby="deleteModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="deleteModalLabel">
-          {m.app_deleteallmodal_title()}
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        {#if deleteModalAlert !== ''}
-          <div class="alert alert-danger" role="alert">
-            {deleteModalAlert}
-          </div>
-        {/if}
-        <p>
-          {m.app_deleteallmodal_warning()}
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-          {m.app_deleteallmodal_exit()}
-        </button>
-        <button type="submit" class="btn btn-danger" onclick={deleteAllQuestions}>
-          {m.app_deleteallmodal_action()}
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-<Export />
+<Settings
+  onDeleteAll={() => {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('settingsModal'), {});
+    modal.hide();
+    updateQuestionsAndSurveys();
+  }}
+/>

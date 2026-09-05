@@ -244,7 +244,7 @@
       </div>
     </span>
 
-    <span class="navbar-brand mb-0 h1">
+    <span>
       {#if loggedIn}
         <button type="button" onclick={logout} class="btn">{m.app_moderator_logout()}</button>
       {:else}

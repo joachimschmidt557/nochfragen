@@ -249,7 +249,7 @@
           Language
         </button>
         <ul class="dropdown-menu" aria-labelledby="languageDropdownMenuButton">
-          {#each locales as locale}
+          {#each locales as locale (locale)}
             <li>
               <a
                 class="dropdown-item"
@@ -404,7 +404,9 @@
         <div class="modal-body">
           {#if openidConnectAvailable}
             <div class="mb-3">
-              <a class="btn btn-primary" href="/api/openid-connect/login">Sign in with SSO</a>
+              <a class="btn btn-primary" href="/api/openid-connect/login" rel="external">
+                Sign in with SSO
+              </a>
             </div>
 
             <hr />

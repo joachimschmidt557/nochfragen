@@ -127,7 +127,7 @@
     </div>
 
     <div class="list-group">
-      {#each item.options as option}
+      {#each item.options as option (option.id)}
         <label class="list-group-item">
           {#if !item.voted}
             <input

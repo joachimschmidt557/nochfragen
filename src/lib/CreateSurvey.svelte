@@ -60,7 +60,7 @@
         {m.app_surveycreationmodal_action()}
       </button>
     </div>
-    {#each options as option, index}
+    {#each options as option, index (option + index)}
       <div class="input-group mb-2">
         <input bind:value={options[index]} class="form-control" />
         <button

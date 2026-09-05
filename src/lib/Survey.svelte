@@ -145,14 +145,14 @@
               role="progressbar"
               style:width={calcPercent(option.votes)}
             ></div>
-          </div></label
-        >
+          </div>
+        </label>
       {/each}
     </div>
     {#if !item.voted}
-      <button onclick={submit} class="btn btn-primary mt-2" disabled={choice == -1}
-        >{m.app_surveys_submit()}</button
-      >
+      <button onclick={submit} class="btn btn-primary mt-2" disabled={choice == -1}>
+        {m.app_surveys_submit()}
+      </button>
     {/if}
   </li>
 {/if}

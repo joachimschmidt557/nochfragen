@@ -57,7 +57,7 @@ npm run build
 `nochfragen` is configured with environment variables:
 
 | Environment variable              | Default          | Description                            |
-|-----------------------------------|------------------|----------------------------------------|
+| --------------------------------- | ---------------- | -------------------------------------- |
 | `$NOCHFRAGEN_PASSWORD` (required) | None             | Moderation password                    |
 | `$OIDC_ISSUER_URL` (optional)     | None             | URL of OpenID Connect provider         |
 | `$OIDC_CLIENT_ID` (optional)      | None             | OpenID Connect client ID               |

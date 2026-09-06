@@ -3,12 +3,44 @@
 
   interface Props {
     onDeleteAll: () => void;
+    askQuestionsEnabled: boolean;
   }
 
-  let { onDeleteAll }: Props = $props();
+  let { onDeleteAll, askQuestionsEnabled = $bindable() }: Props = $props();
 
   let deleteAlert = $state('');
   let deleteConfirm = $state(false);
+
+  let settingAlert = $state('');
+
+  async function toggleAskQuestions(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const newValue = target.checked;
+    const previousValue = askQuestionsEnabled;
+
+    askQuestionsEnabled = newValue;
+
+    try {
+      const response = await fetch(`/api/settings/ask_questions_enabled`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ enabled: newValue })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status} ${response.statusText}`);
+      }
+
+      settingAlert = '';
+    } catch (error) {
+      askQuestionsEnabled = previousValue;
+      target.checked = previousValue;
+      const toggleError = `${error}`;
+      settingAlert = toggleError;
+    }
+  }
 
   function confirmDelete() {
     deleteConfirm = true;
@@ -50,6 +82,29 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <div class="mb-4">
+          <h6 class="mb-1">{m.app_ask_settings_title()}</h6>
+          <p class="mb-2">{m.app_ask_settings_description()}</p>
+          <div class="form-check form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="askQuestionsSwitch"
+              checked={askQuestionsEnabled}
+              onchange={toggleAskQuestions}
+            />
+            <label class="form-check-label" for="askQuestionsSwitch">
+              {m.app_ask_settings_label()}
+            </label>
+          </div>
+          {#if settingAlert !== ''}
+            <div class="alert alert-danger mt-2" role="alert">
+              {settingAlert}
+            </div>
+          {/if}
+        </div>
+        <hr />
         <div class="mb-4">
           <h6 class="mb-1">{m.app_exportmodal_title()}</h6>
           <p class="mb-2">{m.app_exportmodal_description()}</p>

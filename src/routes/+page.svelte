@@ -23,6 +23,7 @@
   onMount(() => {
     poll();
     getLoginStatus();
+    loadAskQuestionsEnabled();
   });
 
   let updating = $state(true);
@@ -34,6 +35,7 @@
   let hiddenItems: Question[] = $state([]);
   let hiddenAnsweredItems: Question[] = $state([]);
   let surveyItems: Survey[] = $state([]);
+  let askQuestionsEnabled = $state(true);
 
   let connected = $state(true);
   let password = $state('');
@@ -47,6 +49,19 @@
     constructor(message: string, statusCode: number) {
       super(message);
       this.statusCode = statusCode;
+    }
+  }
+
+  async function loadAskQuestionsEnabled() {
+    try {
+      const response = await fetch(`/api/settings/ask_questions_enabled`);
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      askQuestionsEnabled = data.enabled;
+    } catch {
+      askQuestionsEnabled = false;
     }
   }
 
@@ -310,7 +325,13 @@
     </ul>
 
     <ul class="list-group">
-      <CreateQuestion success={submitSuccess} error={submitError} />
+      {#if askQuestionsEnabled}
+        <CreateQuestion success={submitSuccess} error={submitError} />
+      {:else}
+        <div class="list-group-item text-center text-muted fst-italic">
+          {m.app_ask_disabled()}
+        </div>
+      {/if}
       <QuestionList {items} {loggedIn} />
     </ul>
 
@@ -407,4 +428,5 @@
     modal.hide();
     updateQuestionsAndSurveys();
   }}
+  bind:askQuestionsEnabled
 />

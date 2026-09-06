@@ -24,6 +24,7 @@ pub mod models;
 pub mod schema;
 
 pub mod questions;
+pub mod settings;
 pub mod surveys;
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;

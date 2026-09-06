@@ -164,3 +164,10 @@ pub struct NewSurveyOption {
     pub text: String,
     pub votes: i32,
 }
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::schema::settings)]
+pub struct NewSetting {
+    pub key: String,
+    pub value: String,
+}

@@ -5,17 +5,16 @@ use axum::{
     routing::{delete, get, patch, post, put},
 };
 use dotenvy::dotenv;
+use nochfragen::{
+    AppResult, AppState, connect_db, connect_openid_connect, connect_redis, create_session_layer,
+    oidc_login, questions, settings, surveys,
+};
 use scrypt::{
     Scrypt,
     password_hash::{PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
-
-use nochfragen::{
-    AppResult, AppState, connect_db, connect_openid_connect, connect_redis, create_session_layer,
-    oidc_login, questions, surveys,
-};
 use tower_sessions::Session;
 
 fn app() -> Router<AppState> {
@@ -47,6 +46,11 @@ fn app() -> Router<AppState> {
             put(surveys::vote_for_survey_option),
         )
         .route("/api/survey/{id}", delete(surveys::delete_survey))
+        // settings
+        .route(
+            "/api/settings/ask_questions_enabled",
+            get(settings::get_ask_questions_enabled).put(settings::modify_ask_questions_enabled),
+        )
 }
 
 #[tokio::main]

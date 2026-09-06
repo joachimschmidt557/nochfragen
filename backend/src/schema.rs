@@ -30,6 +30,13 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    settings (key) {
+        key -> Text,
+        value -> Text,
+    }
+}
+
 diesel::joinable!(survey_options -> surveys (survey));
 
-diesel::allow_tables_to_appear_in_same_query!(questions, survey_options, surveys,);
+diesel::allow_tables_to_appear_in_same_query!(questions, survey_options, settings, surveys,);

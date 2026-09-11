@@ -85,6 +85,10 @@ pub async fn add_question(
 ) -> AppResult<Response> {
     let mut connection = app_state.db_pool.get()?;
 
+    if !crate::settings::ask_questions_enabled(&mut connection)? {
+        return Ok((StatusCode::FORBIDDEN, "Asking questions is disabled").into_response());
+    }
+
     let text = request.text;
 
     if text.is_empty() {

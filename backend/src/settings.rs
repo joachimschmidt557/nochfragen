@@ -5,12 +5,17 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use diesel::prelude::*;
+use scrypt::{
+    Scrypt,
+    password_hash::{PasswordHashString, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+};
 use serde::{Deserialize, Serialize};
 use tower_sessions::Session;
 
 use crate::{AppResult, AppState, models::NewSetting, schema::settings};
 
 pub const KEY_ASK_QUESTIONS_ENABLED: &str = "ask_questions_enabled";
+pub const KEY_MODERATION_PASSWORD_HASH: &str = "moderation_password_hash";
 
 fn bool_to_value(flag: bool) -> String {
     if flag {
@@ -86,6 +91,88 @@ pub async fn modify_ask_questions_enabled(
         .do_update()
         .set(settings::value.eq(&value))
         .execute(&mut connection)?;
+
+    Ok(StatusCode::OK.into_response())
+}
+
+/// Returns the stored moderation password hash, if any.
+pub fn moderation_password_hash(
+    conn: &mut SqliteConnection,
+) -> AppResult<Option<PasswordHashString>> {
+    let row: Option<String> = settings::table
+        .filter(settings::key.eq(KEY_MODERATION_PASSWORD_HASH))
+        .select(settings::value)
+        .first(conn)
+        .optional()?;
+
+    match row {
+        Some(value) => Ok(Some(PasswordHashString::new(&value)?)),
+        None => Ok(None),
+    }
+}
+
+/// Stores the moderation password hash, overwriting any previously stored value.
+pub fn set_moderation_password_hash(
+    conn: &mut SqliteConnection,
+    hash: &PasswordHashString,
+) -> AppResult<()> {
+    let value = hash.to_string();
+
+    diesel::insert_into(settings::table)
+        .values(NewSetting {
+            key: KEY_MODERATION_PASSWORD_HASH.to_string(),
+            value: value.clone(),
+        })
+        .on_conflict(settings::key)
+        .do_update()
+        .set(settings::value.eq(&value))
+        .execute(conn)?;
+
+    Ok(())
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangeModerationPasswordRequest {
+    current_password: String,
+    new_password: String,
+}
+
+pub async fn modify_moderation_password(
+    State(app_state): State<AppState>,
+    session: Session,
+    Json(request): Json<ChangeModerationPasswordRequest>,
+) -> AppResult<Response> {
+    let logged_in = session
+        .get::<bool>("authenticated")
+        .await
+        .unwrap_or(None)
+        .unwrap_or(false);
+    if !logged_in {
+        return Ok(StatusCode::FORBIDDEN.into_response());
+    }
+
+    let mut connection = app_state.db_pool.get()?;
+
+    if let Some(hash) = moderation_password_hash(&mut connection)? {
+        match Scrypt.verify_password(request.current_password.as_bytes(), &hash.password_hash()) {
+            Ok(_) => {}
+            Err(_) => return Ok(StatusCode::FORBIDDEN.into_response()),
+        }
+    } else {
+        return Ok(StatusCode::FORBIDDEN.into_response());
+    }
+
+    if request.new_password.is_empty() {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
+    }
+
+    let salt = SaltString::generate(&mut OsRng);
+    let new_hash = Scrypt
+        .hash_password(request.new_password.as_bytes(), &salt)
+        .expect("failed to hash password")
+        .serialize();
+    set_moderation_password_hash(&mut connection, &new_hash)?;
 
     Ok(StatusCode::OK.into_response())
 }

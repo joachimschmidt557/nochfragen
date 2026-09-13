@@ -1,4 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse};
+use std::fmt;
 use diesel::{
     SqliteConnection,
     r2d2::{self, ConnectionManager},
@@ -12,7 +13,6 @@ use openidconnect::{
     core::{CoreClient, CoreProviderMetadata},
     reqwest,
 };
-use scrypt::password_hash::PasswordHashString;
 use time::Duration;
 use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions_redis_store::RedisStore;
@@ -64,12 +64,17 @@ pub type OidcClient = Client<
 pub struct AppState {
     pub db_pool: DbPool,
     pub redis_pool: Pool,
-    pub hashed_password: PasswordHashString,
     pub oidc_client: Option<OidcClient>,
 }
 
 pub struct AppErr(anyhow::Error);
 pub type AppResult<T> = Result<T, AppErr>;
+
+impl fmt::Debug for AppErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<E> From<E> for AppErr
 where

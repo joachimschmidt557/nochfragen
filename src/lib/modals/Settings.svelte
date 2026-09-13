@@ -13,6 +13,12 @@
 
   let settingAlert = $state('');
 
+  let currentPassword = $state('');
+  let newPassword = $state('');
+  let confirmPassword = $state('');
+  let passwordAlert = $state('');
+  let passwordSuccess = $state('');
+
   async function toggleAskQuestions(event: Event) {
     const target = event.target as HTMLInputElement;
     const newValue = target.checked;
@@ -48,6 +54,52 @@
 
   function cancelDelete() {
     deleteConfirm = false;
+  }
+
+  async function changePassword(ev: SubmitEvent) {
+    ev.preventDefault();
+
+    if (newPassword === '') {
+      passwordAlert = m.app_changepassword_error_empty();
+      passwordSuccess = '';
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      passwordAlert = m.app_changepassword_error_mismatch();
+      passwordSuccess = '';
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/settings/moderator_password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      if (response.status === 403) {
+        throw new Error(m.app_changepassword_error_wrongcurrent());
+      } else if (!response.ok) {
+        throw new Error(
+          m.app_changepassword_error_general({
+            status: response.status,
+            statusText: response.statusText
+          })
+        );
+      }
+
+      passwordAlert = '';
+      passwordSuccess = m.app_changepassword_success();
+      currentPassword = '';
+      newPassword = '';
+      confirmPassword = '';
+    } catch (error) {
+      passwordSuccess = '';
+      passwordAlert = `${error}`;
+    }
   }
 
   async function deleteAllQuestions() {
@@ -117,6 +169,62 @@
           >
             {m.app_exportmodal_action()}
           </a>
+        </div>
+        <hr />
+        <div class="mb-4">
+          <h6 class="mb-1">{m.app_changepassword_title()}</h6>
+          <p class="mb-2">{m.app_changepassword_description()}</p>
+          <form onsubmit={changePassword}>
+            <div class="mb-3">
+              <label for="currentPassword" class="form-label">
+                {m.app_changepassword_currentlabel()}
+              </label>
+              <input
+                bind:value={currentPassword}
+                type="password"
+                class="form-control"
+                id="currentPassword"
+                autocomplete="current-password"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="newPassword" class="form-label">
+                {m.app_changepassword_newlabel()}
+              </label>
+              <input
+                bind:value={newPassword}
+                type="password"
+                class="form-control"
+                id="newPassword"
+                autocomplete="new-password"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="confirmPassword" class="form-label">
+                {m.app_changepassword_confirmlabel()}
+              </label>
+              <input
+                bind:value={confirmPassword}
+                type="password"
+                class="form-control"
+                id="confirmPassword"
+                autocomplete="new-password"
+              />
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">
+              {m.app_changepassword_action()}
+            </button>
+          </form>
+          {#if passwordAlert !== ''}
+            <div class="alert alert-danger mt-2" role="alert">
+              {passwordAlert}
+            </div>
+          {/if}
+          {#if passwordSuccess !== ''}
+            <div class="alert alert-success mt-2" role="alert">
+              {passwordSuccess}
+            </div>
+          {/if}
         </div>
         <hr />
         <div>

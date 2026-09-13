@@ -51,6 +51,10 @@ fn app() -> Router<AppState> {
             "/api/settings/ask_questions_enabled",
             get(settings::get_ask_questions_enabled).put(settings::modify_ask_questions_enabled),
         )
+        .route(
+            "/api/settings/moderator_password",
+            put(settings::modify_moderation_password),
+        )
 }
 
 #[tokio::main]
@@ -65,16 +69,27 @@ async fn main() {
     let oidc_client = connect_openid_connect().await;
     let session_layer = create_session_layer(redis_pool.clone());
 
-    let salt = SaltString::generate(&mut OsRng);
-    let password = std::env::var("NOCHFRAGEN_PASSWORD")
-        .expect("set NOCHFRAGEN_PASSWORD environment variable with the moderation password");
+    let mut connection = db_pool
+        .get()
+        .expect("Failed to get a connection from the db pool");
+    if settings::moderation_password_hash(&mut connection)
+        .expect("Failed to read moderation password hash from the database")
+        .is_none()
+    {
+        let password = std::env::var("NOCHFRAGEN_PASSWORD")
+            .expect("set NOCHFRAGEN_PASSWORD environment variable with the moderation password");
+        let salt = SaltString::generate(&mut OsRng);
+        let hash = Scrypt
+            .hash_password(password.as_bytes(), &salt)
+            .expect("failed to hash password")
+            .serialize();
+        settings::set_moderation_password_hash(&mut connection, &hash)
+            .expect("failed to store moderation password hash");
+    }
+
     let app_state = AppState {
         db_pool,
         redis_pool,
-        hashed_password: Scrypt
-            .hash_password(password.as_bytes(), &salt)
-            .expect("failed to hash password")
-            .serialize(),
         oidc_client,
     };
 
@@ -129,15 +144,18 @@ async fn login(
     session: Session,
     Json(request): Json<LoginRequest>,
 ) -> AppResult<StatusCode> {
-    match Scrypt.verify_password(
-        request.password.as_bytes(),
-        &state.hashed_password.password_hash(),
-    ) {
-        Ok(_) => {
-            session.insert("authenticated", true).await?;
-            Ok(StatusCode::OK)
+    let mut connection = state.db_pool.get()?;
+
+    if let Some(hash) = settings::moderation_password_hash(&mut connection)? {
+        match Scrypt.verify_password(request.password.as_bytes(), &hash.password_hash()) {
+            Ok(_) => {
+                session.insert("authenticated", true).await?;
+                Ok(StatusCode::OK)
+            }
+            Err(_) => Ok(StatusCode::FORBIDDEN),
         }
-        Err(_) => Ok(StatusCode::FORBIDDEN),
+    } else {
+        Ok(StatusCode::FORBIDDEN)
     }
 }
 

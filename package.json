@@ -22,7 +22,7 @@
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "bootstrap": "^5.3.8",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",

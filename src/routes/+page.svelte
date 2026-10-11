@@ -2,23 +2,23 @@
   import * as bootstrap from 'bootstrap';
   import { onMount } from 'svelte';
 
-  import type { Pathname } from '$app/types';
+  import type { Path } from '$app/types';
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
-  import { locales, localizeHref } from '$lib/paraglide/runtime';
-  import { m } from '$lib/paraglide/messages.js';
+  import { locales, localizeHref } from '#lib/paraglide/runtime.js';
+  import { m } from '#lib/paraglide/messages.js';
 
-  import type { Question, Survey } from '$lib/types';
-  import { QuestionState } from '$lib/types';
+  import type { Question, Survey } from '#lib/types.js';
+  import { QuestionState } from '#lib/types.js';
 
-  import CreateQuestion from '$lib/CreateQuestion.svelte';
-  import QuestionList from '$lib/QuestionList.svelte';
-  import CreateSurvey from '$lib/CreateSurvey.svelte';
-  import SurveyList from '$lib/SurveyList.svelte';
+  import CreateQuestion from '#lib/CreateQuestion.svelte';
+  import QuestionList from '#lib/QuestionList.svelte';
+  import CreateSurvey from '#lib/CreateSurvey.svelte';
+  import SurveyList from '#lib/SurveyList.svelte';
 
-  import Settings from '$lib/modals/Settings.svelte';
+  import Settings from '#lib/modals/Settings.svelte';
 
-  import { PUBLIC_IMPRINT_URL, PUBLIC_PRIVACY_POLICY_URL } from '$env/static/public';
+  import { PUBLIC_IMPRINT_URL, PUBLIC_PRIVACY_POLICY_URL } from '$app/env/public';
 
   onMount(() => {
     poll();
@@ -149,10 +149,8 @@
     try {
       const response = await fetch(`/api/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ password: password })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
       });
 
       if (response.status === 403) {
@@ -238,16 +236,15 @@
           type="button"
           id="languageDropdownMenuButton"
           data-bs-toggle="dropdown"
-          aria-expanded="false"
+          aria-expanded="false">Language</button
         >
-          Language
-        </button>
+
         <ul class="dropdown-menu" aria-labelledby="languageDropdownMenuButton">
           {#each locales as locale (locale)}
             <li>
               <a
                 class="dropdown-item"
-                href={resolve(localizeHref(page.url.pathname, { locale }) as Pathname)}
+                href={resolve(localizeHref(page.url.pathname, { locale }).slice(1) as Path)}
                 data-sveltekit-reload
               >
                 {getFlagEmoji(locale)}
@@ -338,39 +335,36 @@
     {#if answeredItems.length > 0}
       <div class="mt-3">
         {m.app_questions_answered()}
-        <ul class="list-group">
-          <QuestionList items={answeredItems} {loggedIn} />
-        </ul>
+        <ul class="list-group"><QuestionList items={answeredItems} {loggedIn} /></ul>
       </div>
     {/if}
 
     {#if hiddenItems.length > 0}
       <div class="mt-3">
         {m.app_questions_hidden()}
-        <ul class="list-group">
-          <QuestionList items={hiddenItems} {loggedIn} />
-        </ul>
+        <ul class="list-group"><QuestionList items={hiddenItems} {loggedIn} /></ul>
       </div>
     {/if}
 
     {#if hiddenAnsweredItems.length > 0}
       <div class="mt-3">
         {m.app_questions_hidden_and_answered()}
-        <ul class="list-group">
-          <QuestionList items={hiddenAnsweredItems} {loggedIn} />
-        </ul>
+        <ul class="list-group"><QuestionList items={hiddenAnsweredItems} {loggedIn} /></ul>
       </div>
     {/if}
   </div>
   <div class="mt-3">
     <p class="text-center text-muted fst-italic">
       {m.app_opensource()}
-      <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>.
+
+      <a href="https://github.com/joachimschmidt557/nochfragen" target="_blank">open source</a>
+
+      .
 
       <a href={PUBLIC_IMPRINT_URL} rel="external" target="_blank">{m.app_imprint()}</a>
-      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank">
-        {m.app_privacy_policy()}
-      </a>
+
+      <a href={PUBLIC_PRIVACY_POLICY_URL} rel="external" target="_blank">{m.app_privacy_policy()}</a
+      >
     </p>
   </div>
 </main>

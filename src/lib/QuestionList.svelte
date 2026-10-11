@@ -1,5 +1,5 @@
 <script lang="ts">
-  import QuestionComponent from '$lib/Question.svelte';
+  import QuestionComponent from '#lib/Question.svelte';
   import type { Question } from './types';
 
   interface Props {

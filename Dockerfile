@@ -12,7 +12,7 @@ WORKDIR /app
 COPY src ./src
 COPY project.inlang ./project.inlang
 COPY messages ./messages
-COPY package.json package-lock.json svelte.config.js vite.config.js .env ./
+COPY package.json package-lock.json vite.config.js .env ./
 
 RUN npm i
 RUN npm run build

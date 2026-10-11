@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SurveyComponent from '$lib/Survey.svelte';
+  import SurveyComponent from '#lib/Survey.svelte';
   import type { Survey } from './types';
 
   interface Props {

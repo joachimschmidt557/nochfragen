@@ -168,10 +168,7 @@
       passwordModalAlert = '';
       password = '';
 
-      var loginModal = bootstrap.Modal.getOrCreateInstance(
-        document.getElementById('loginModal'),
-        {}
-      );
+      var loginModal = bootstrap.Modal.getOrCreateInstance('#loginModal', {});
       loginModal.hide();
       updateQuestionsAndSurveys();
     } catch (error) {
@@ -418,7 +415,7 @@
 </div>
 <Settings
   onDeleteAll={() => {
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('settingsModal'), {});
+    const modal = bootstrap.Modal.getOrCreateInstance('#settingsModal', {});
     modal.hide();
     updateQuestionsAndSurveys();
   }}

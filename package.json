@@ -12,7 +12,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy url baseLocale",
+    "check": "npm run paraglide && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write ."
   },

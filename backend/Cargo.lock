@@ -2827,7 +2827,7 @@ dependencies = [
  "tower-cookies",
  "tower-layer",
  "tower-service",
- "tower-sessions-core",
+ "tower-sessions-core 0.14.0",
  "tower-sessions-memory-store",
  "tracing",
 ]
@@ -2854,6 +2854,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "tower-sessions-core"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "568531ec3dfcf3ffe493de1958ae5662a0284ac5d767476ecdb6a34ff8c6b06c"
+dependencies = [
+ "async-trait",
+ "base64",
+ "futures",
+ "http",
+ "parking_lot",
+ "rand 0.9.4",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "time",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "tower-sessions-memory-store"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2862,21 +2882,21 @@ dependencies = [
  "async-trait",
  "time",
  "tokio",
- "tower-sessions-core",
+ "tower-sessions-core 0.14.0",
 ]
 
 [[package]]
 name = "tower-sessions-redis-store"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e15b774f3d46625a27a8ac1238ecd73c8bd50013244e2de004026e161aad728"
+checksum = "54de51571df96c11c55f72a328fa6a6d6b79217465825b1b57356281fcdded9f"
 dependencies = [
  "async-trait",
  "fred",
  "rmp-serde",
  "thiserror 2.0.17",
  "time",
- "tower-sessions-core",
+ "tower-sessions-core 0.15.0",
 ]
 
 [[package]]
